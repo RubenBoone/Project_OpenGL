@@ -5,6 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "FileReader.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
