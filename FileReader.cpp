@@ -11,11 +11,11 @@ FileReader::FileReader(const char* filePath) {
 			std::getline(file, line);
 			fileContent += line + "\n";
 		}		
+		fileContent += "\0";
 	}
 	else
 	{
-		std::cerr << "Unable to open file: " << filePath << std::endl;
+		std::cerr << "Unable to open file" << std::endl;
 	}
 	file.close();
 }
-
