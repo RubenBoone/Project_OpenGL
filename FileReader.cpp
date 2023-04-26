@@ -14,7 +14,7 @@ FileReader::FileReader(const char* filePath) {
 	}
 	else
 	{
-		std::cerr << "Unable to open file" << std::endl;
+		std::cerr << "Unable to open file: " << filePath << std::endl;
 	}
 	file.close();
 }
