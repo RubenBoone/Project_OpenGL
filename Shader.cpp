@@ -18,6 +18,6 @@ Shader::Shader(const char* vertexShaderSource, const char* fragmentShaderSource)
 	glLinkProgram(ID);
 	errorCheck(ID,"PROGRAM");
 
-        glDeleteShader(vshader_id);
-        glDeleteShader(fshader_id);
+	glDeleteShader(vshader_id);
+	glDeleteShader(fshader_id);
 }

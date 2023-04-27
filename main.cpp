@@ -8,14 +8,21 @@
 #include "FileReader.h"
 #include "Shader.h"
 #include "Texture.h"
+#include "Camera.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 void processInput(GLFWwindow* window);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
+Camera playerCam = Camera(SCR_WIDTH, SCR_HEIGHT);
 
 int main()
 {
@@ -36,7 +43,7 @@ int main()
     glfwMakeContextCurrent(window);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
+    glfwSetCursorPosCallback(window, mouse_callback);
     // glad load all OpenGL funnction pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -46,9 +53,10 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
 
+    // TODO: Transparency is a bit buggy if we just do this... Disabled it for now
     // we use transparant texture 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glEnable(GL_BLEND);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
         FileReader("resources/shaders/cubeShader.fs").getFileContent());
@@ -124,8 +132,14 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
+        // timing
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
         // input
         processInput(window);
+        playerCam.handleCameraControls(window, deltaTime);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -133,11 +147,10 @@ int main()
         glm::mat4 model = glm::mat4(1.0f);
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
-
-        //replace camera, Z-axis : - away from screen, + close to screen
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -5.0f));
-        // FOV              aspect ratio                  near  far
-        projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float) SCR_HEIGHT, 0.1f, 100.0f);
+       
+        view = playerCam.getCamView();
+                                       // FOV              aspect ratio                     near  far
+        projection = glm::perspective(glm::radians(45.0f), (float) SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
 
         glUseProgram(shader.ID);
         int modelLoc = glGetUniformLocation(shader.ID, "model");
@@ -150,6 +163,7 @@ int main()
         // render
         glBindVertexArray(vao);
         leaves.bindTexture();
+
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         // swap buffers & check events
@@ -169,4 +183,9 @@ void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+}
+
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
+{
+    playerCam.mouse_callback(window, xposIn, yposIn);
 }
