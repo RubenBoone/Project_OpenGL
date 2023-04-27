@@ -151,21 +151,24 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\opengl_base\stb_image.h" />
     <ClInclude Include="FileReader.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="Texture.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\cubeShader.fs" />
     <None Include="resources\shaders\cubeShader.vs" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="resources\textures\grass.jpg" />
+    <Text Include="resources\maze.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="resources\maze.txt" />
+    <Image Include="resources\textures\gravel.png" />
+    <Image Include="resources\textures\leaves.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
