@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <vector>
 
 #include "FileReader.h"
 #include "Shader.h"
@@ -23,6 +24,17 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 Camera playerCam = Camera(SCR_WIDTH, SCR_HEIGHT);
+
+struct MazeLocation
+{
+    glm::vec3 position;
+    bool isWall;
+
+    MazeLocation(glm::vec3 position, bool isWall) {
+        this->position = position;
+        this->isWall = isWall;
+    }
+};
 
 int main()
 {
@@ -49,6 +61,32 @@ int main()
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
+    }
+
+    std::vector<MazeLocation> mazeWalls;
+
+    std::string maze = FileReader("resources/maze.txt").getFileContent();
+    int i = 0;
+    float x = 0.0f;
+    float z = 0.0f;
+    while (maze[i] != '\0')
+    {
+        switch (maze[i])
+        {
+        case ' ':
+            mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), false));
+            x--;
+            break;
+        case '#':
+            mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), true));
+            x--;
+            break;
+        case '\n':
+            x = 0.0f;
+            z -= 1.0f;
+            break;
+        }
+        i++;
     }
 
     glEnable(GL_DEPTH_TEST);
@@ -125,6 +163,7 @@ int main()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     Texture leaves("resources/textures/leaves.png");
+    Texture gravel("resources/textures/gravel.png");
 
     glUseProgram(shader.ID);
     unsigned int texUniform = glGetUniformLocation(shader.ID, "TexCoord");
@@ -164,7 +203,24 @@ int main()
         glBindVertexArray(vao);
         leaves.bindTexture();
 
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        for (int i = 0; i < (int)mazeWalls.size(); i++)
+        {
+            if (mazeWalls[i].isWall)
+            {
+                leaves.bindTexture();
+                model = glm::mat4(1.0f);
+                model = glm::translate(model, mazeWalls[i].position);
+                glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
+            gravel.bindTexture();
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(mazeWalls[i].position.x, -1.0f, mazeWalls[i].position.z));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            glDrawArraysInstanced(GL_TRIANGLES, 0, 36);
+        }
+
 
         // swap buffers & check events
         glfwSwapBuffers(window);
@@ -174,6 +230,7 @@ int main()
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     leaves.deleteTexture();
+    gravel.deleteTexture();
     glDeleteProgram(shader.ID);
 
 	return 0;

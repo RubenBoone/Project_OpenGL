@@ -1,5 +1,7 @@
 #include "Camera.h"
 
+#include <iostream>
+
 /*
 *   Inspired by LearnOpenGL.com
 */
@@ -18,7 +20,8 @@ void Camera::handleCameraControls(GLFWwindow* window, float deltaTime)
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         cameraSpeed = 4.0f * deltaTime;
-
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+        admin = !admin;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         position += cameraSpeed * lookingDirection;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -27,9 +30,15 @@ void Camera::handleCameraControls(GLFWwindow* window, float deltaTime)
         position -= glm::normalize(glm::cross(lookingDirection, UpVector)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         position += glm::normalize(glm::cross(lookingDirection, UpVector)) * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
-        //jump
-    position.y = 0.0f;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        std::cout << "jump!" << std::endl;
+    }
+
+    if (!admin)
+    {
+        position.y = 0.0f;
+    }
 
 }
 
