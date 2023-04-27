@@ -1,5 +1,8 @@
 #include "Camera.h"
 
+/*
+*   Inspired by LearnOpenGL.com
+*/
 
 Camera::Camera(float screenWidth, float screenHeight) {
     lastX = screenWidth / 2;
@@ -10,11 +13,12 @@ Camera::Camera(float screenWidth, float screenHeight) {
 
 void Camera::handleCameraControls(GLFWwindow* window, float deltaTime) 
 {
-    float cameraSpeed;
+
+    float cameraSpeed = 2.5f * deltaTime;
+
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         cameraSpeed = 4.0f * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE)
-        cameraSpeed = 2.5f * deltaTime;
+
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         position += cameraSpeed * lookingDirection;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -23,7 +27,10 @@ void Camera::handleCameraControls(GLFWwindow* window, float deltaTime)
         position -= glm::normalize(glm::cross(lookingDirection, UpVector)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         position += glm::normalize(glm::cross(lookingDirection, UpVector)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS);
+        //jump
     position.y = 0.0f;
+
 }
 
 void Camera::mouse_callback(GLFWwindow* window, double xpos, double ypos)
