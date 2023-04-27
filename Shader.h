@@ -18,7 +18,7 @@ class Shader
 			if (!success)
 			{
 				glGetProgramInfoLog(ID, 512, NULL, infoLog);
-				std::cout << "ERROR::SHADER::" << type << "LINKING_GAILED\n" << infoLog << std::endl;
+				std::cout << "ERROR::SHADER::" << type << "::LINKING_FAILED\n" << infoLog << std::endl;
 			}
 		}
 		else
