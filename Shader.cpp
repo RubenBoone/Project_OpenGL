@@ -17,4 +17,7 @@ Shader::Shader(const char* vertexShaderSource, const char* fragmentShaderSource)
 	glAttachShader(ID, fshader_id);
 	glLinkProgram(ID);
 	errorCheck(ID,"PROGRAM");
+
+        glDeleteShader(vshader_id);
+        glDeleteShader(fshadzr_id);
 }
