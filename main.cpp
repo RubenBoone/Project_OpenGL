@@ -47,12 +47,19 @@ int main()
         FileReader("resources/shaders/cubeShader.fs").getFileContent());
 
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.5f, 0.5f, 0.0f
+        // Postion              // TextCoord
+        -0.5f, -0.5f, 0.0f,     0.0f, 0.0f,
+        -0.5f, 0.5f, 0.0f,      0.0f, 1.0f,
+        0.5f, -0.5f, 0.0f,      1.0f, 0.0f,
+        0.5f, 0.5f, 0.0f,       1.0f, 1.0f
     };
 
-    unsigned int vbo, vao;
+    unsigned int indices[] = {
+        0, 1, 2,
+        1, 2, 3
+    };
+
+    unsigned int vbo, vao, ebo;
     glGenBuffers(1, &vbo);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -61,8 +68,43 @@ int main()
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    int width, height, nColChannels;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* bytes = stbi_load("resources/textures/grass.jpg", &width, &height, &nColChannels, 0);
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, bytes);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(bytes);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glUseProgram(shader.ID);
+    unsigned int texUniform = glGetUniformLocation(shader.ID, "TexCoord");
+    glUniform1i(texUniform, 0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -72,12 +114,19 @@ int main()
         // render
         glUseProgram(shader.ID);
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         // swap buffers & check events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
+    glDeleteTextures(1, &texture);
+    glDeleteProgram(shader.ID);
 
 	return 0;
 }
