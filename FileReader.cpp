@@ -2,16 +2,17 @@
 
 FileReader::FileReader(const char* filePath) {
 	std::ifstream file;
-	std::string line;
+	std::string line, temp;
 	file.open(filePath);
 	if (file)
 	{
 		while (!file.eof())
 		{
 			std::getline(file, line);
-			fileContent += line + "\n";
+			temp += line + "\n";
 		}		
-		fileContent += "\0";
+		temp += "\0";
+		fileContent = temp.data();
 	}
 	else
 	{

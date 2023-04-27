@@ -10,8 +10,8 @@ class FileReader
 public:
 	FileReader(const char* filePath);
 
-	std::string getFileContent() {
-		return fileContent;
+	const char* getFileContent() {
+		return fileContent.data();
 	};
 };
 
