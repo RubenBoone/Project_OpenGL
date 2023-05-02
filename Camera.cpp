@@ -17,11 +17,11 @@ void Camera::handleCameraControls(GLFWwindow* window, float deltaTime)
 {
 
     float cameraSpeed = 2.5f * deltaTime;
+    float gravity = -2.5f;
+    float jumpAcceleration = 10.0f;
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         cameraSpeed = 4.0f * deltaTime;
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        admin = !admin;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         position += cameraSpeed * lookingDirection;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -32,12 +32,24 @@ void Camera::handleCameraControls(GLFWwindow* window, float deltaTime)
         position += glm::normalize(glm::cross(lookingDirection, UpVector)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
     {
-        std::cout << "jump!" << std::endl;
+        if (position.y < 1.0f && !jumped)
+        {
+        std::cout << "jump\n";
+        position.y += jumpAcceleration * deltaTime;
+        }
+        else {
+            jumped = true;
+        }
     }
 
-    if (!admin)
+    if (position.y > 0.0f)
+    {
+        position.y += gravity * deltaTime;
+    }
+    if (position.y < 0.0f)
     {
         position.y = 0.0f;
+        jumped = false;
     }
 
 }

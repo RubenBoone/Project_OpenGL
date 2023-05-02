@@ -17,7 +17,7 @@ class Camera
 	float pitch = 0.0f;
 	bool firstMouse;
 	float lastX, lastY;
-	bool admin;
+	bool jumped;
 
 public:
 	Camera(float screenWidth, float screenHeight);
