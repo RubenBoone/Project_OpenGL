@@ -162,12 +162,8 @@ int main()
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    Texture leaves("resources/textures/leaves.png");
-    Texture gravel("resources/textures/gravel.png");
-
-    glUseProgram(shader.ID);
-    unsigned int texUniform = glGetUniformLocation(shader.ID, "TexCoord");
-    glUniform1i(texUniform, 0);
+    Texture leaves("resources/textures/leaves.png", GL_TEXTURE_2D, GL_TEXTURE0);
+    Texture gravel("resources/textures/gravel.png", GL_TEXTURE_2D, GL_TEXTURE0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -191,7 +187,7 @@ int main()
                                        // FOV              aspect ratio                     near  far
         projection = glm::perspective(glm::radians(45.0f), (float) SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
 
-        glUseProgram(shader.ID);
+        shader.Enable();
         int modelLoc = glGetUniformLocation(shader.ID, "model");
         int viewLoc = glGetUniformLocation(shader.ID, "view");
         int projectionLoc = glGetUniformLocation(shader.ID, "projection");
@@ -201,20 +197,18 @@ int main()
 
         // render
         glBindVertexArray(vao);
-        leaves.bindTexture();
-
 
         for (int i = 0; i < (int)mazeWalls.size(); i++)
         {
             if (mazeWalls[i].isWall)
             {
-                leaves.bindTexture();
+                leaves.Bind();
                 model = glm::mat4(1.0f);
                 model = glm::translate(model, mazeWalls[i].position);
                 glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
                 glDrawArrays(GL_TRIANGLES, 0, 36);
             }
-            gravel.bindTexture();
+            gravel.Bind();
             model = glm::mat4(1.0f);
             model = glm::translate(model, glm::vec3(mazeWalls[i].position.x, -1.0f, mazeWalls[i].position.z));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
@@ -229,9 +223,9 @@ int main()
 
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
-    leaves.deleteTexture();
-    gravel.deleteTexture();
-    glDeleteProgram(shader.ID);
+    leaves.CleanUp();
+    gravel.CleanUp();
+    shader.CleanUp();
 
 	return 0;
 }

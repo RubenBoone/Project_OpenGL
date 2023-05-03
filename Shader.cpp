@@ -1,7 +1,7 @@
 #include "Shader.h"
 
-
-Shader::Shader(const char* vertexShaderSource, const char* fragmentShaderSource) {
+Shader::Shader(const char* vertexShaderSource, const char* fragmentShaderSource) 
+{
 	unsigned int vshader_id = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vshader_id, 1, &vertexShaderSource, 0);
 	glCompileShader(vshader_id);
@@ -20,4 +20,19 @@ Shader::Shader(const char* vertexShaderSource, const char* fragmentShaderSource)
 
 	glDeleteShader(vshader_id);
 	glDeleteShader(fshader_id);
+}
+
+void Shader::Enable()
+{
+	glUseProgram(ID);
+}
+
+void Shader::Disable()
+{
+	glUseProgram(0);
+}
+
+void Shader::Cleanup()
+{
+	glDeleteProgram(ID);
 }
