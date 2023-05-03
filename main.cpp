@@ -20,10 +20,14 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
+bool firstMouse = true;
+float lastX = 800.0f / 2.0;
+float lastY = 600.0 / 2.0;
+
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-Camera playerCam = Camera(SCR_WIDTH, SCR_HEIGHT);
+Camera playerCam = Camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 0.0f));
 
 struct MazeLocation
 {
@@ -54,8 +58,9 @@ int main()
     }
     glfwMakeContextCurrent(window);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     // glad load all OpenGL funnction pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -174,26 +179,18 @@ int main()
 
         // input
         processInput(window);
-        playerCam.handleCameraControls(window, deltaTime);
+        playerCam.InputHandler(window, deltaTime);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 projection = glm::mat4(1.0f);
-       
-        view = playerCam.getCamView();
-                                       // FOV              aspect ratio                     near  far
-        projection = glm::perspective(glm::radians(45.0f), (float) SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
-
+               
         shader.Enable();
         int modelLoc = glGetUniformLocation(shader.ID, "model");
-        int viewLoc = glGetUniformLocation(shader.ID, "view");
-        int projectionLoc = glGetUniformLocation(shader.ID, "projection");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniformMatrix4fv(glGetUniformLocation(shader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
 
         // render
         glBindVertexArray(vao);
@@ -238,5 +235,37 @@ void processInput(GLFWwindow* window)
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
-    playerCam.mouse_callback(window, xposIn, yposIn);
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f; // change this value to your liking
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    playerCam.Yaw += xoffset;
+    playerCam.Pitch += yoffset;
+
+    // make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (playerCam.Pitch > 89.0f)
+        playerCam.Pitch = 89.0f;
+    if (playerCam.Pitch < -89.0f)
+        playerCam.Pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(playerCam.Yaw)) * cos(glm::radians(playerCam.Pitch));
+    front.y = sin(glm::radians(playerCam.Pitch));
+    front.z = sin(glm::radians(playerCam.Yaw)) * cos(glm::radians(playerCam.Pitch));
+    playerCam.LookingDirection = glm::normalize(front);
 }

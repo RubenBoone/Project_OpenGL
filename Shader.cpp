@@ -32,7 +32,7 @@ void Shader::Disable()
 	glUseProgram(0);
 }
 
-void Shader::Cleanup()
+void Shader::CleanUp()
 {
 	glDeleteProgram(ID);
 }

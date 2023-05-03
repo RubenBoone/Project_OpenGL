@@ -18,7 +18,7 @@ public:
 
 	void UnBind();
 
-	void Delete();
+	void CleanUp();
 
 };
 

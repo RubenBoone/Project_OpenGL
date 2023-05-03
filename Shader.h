@@ -37,7 +37,7 @@ public:
 
 	void Enable();
 	void Disable();
-	void Cleanup();
+	void CleanUp();
 };
 
 #endif
