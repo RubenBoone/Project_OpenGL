@@ -12,6 +12,7 @@
 #include "Camera.h"
 #include "VAO.h"
 #include "VBO.h"
+#include "EBO.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -44,47 +45,45 @@ struct MazeLocation
 
 float vertices[] = {
     // Postion            // TextCoord
-   -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-    0.5f, -0.5f, -0.5f,  2.0f, 0.0f,
-    0.5f,  0.5f, -0.5f,  2.0f, 2.0f,
-    0.5f,  0.5f, -0.5f,  2.0f, 2.0f,
-   -0.5f,  0.5f, -0.5f,  0.0f, 2.0f,
-   -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+   -0.5f, -0.5f, -0.5f,  0, 0, // Front Bottom Left
+    0.5f, -0.5f, -0.5f,  2, 0, // Front Bottom Right
+    0.5f,  0.5f, -0.5f,  2, 2, // Front Top Right
+   -0.5f,  0.5f, -0.5f,  0, 2, // Front Top Left
 
-   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    0.5f, -0.5f,  0.5f,  2.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,  2.0f, 2.0f,
-    0.5f,  0.5f,  0.5f,  2.0f, 2.0f,
-   -0.5f,  0.5f,  0.5f,  0.0f, 2.0f,
-   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+   -0.5f, -0.5f,  0.5f,  2, 0, // Back Bottom Left
+    0.5f, -0.5f,  0.5f,  0, 0, // Back Bottom Right
+    0.5f,  0.5f,  0.5f,  0, 2, // Back Top Right
+   -0.5f,  0.5f,  0.5f,  2, 2, // Back Top Left
 
-   -0.5f,  0.5f,  0.5f,  2.0f, 0.0f,
-   -0.5f,  0.5f, -0.5f,  2.0f, 2.0f,
-   -0.5f, -0.5f, -0.5f,  0.0f, 2.0f,
-   -0.5f, -0.5f, -0.5f,  0.0f, 2.0f,
-   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-   -0.5f,  0.5f,  0.5f,  2.0f, 0.0f,
+   -0.5f, -0.5f, -0.5f,  2, 2, // Front Bottom Left for bottom
+    0.5f,  0.5f, -0.5f,  0, 0, // Back Top right for top
+};
 
-    0.5f,  0.5f,  0.5f,  2.0f, 0.0f,
-    0.5f,  0.5f, -0.5f,  2.0f, 2.0f,
-    0.5f, -0.5f, -0.5f,  0.0f, 2.0f,
-    0.5f, -0.5f, -0.5f,  0.0f, 2.0f,
-    0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,  2.0f, 0.0f,
+unsigned int indices[] = {
+    // Front
+    0, 1, 2,
+    0, 2, 3, 
 
-   -0.5f, -0.5f, -0.5f,  0.0f, 2.0f,
-    0.5f, -0.5f, -0.5f,  2.0f, 2.0f,
-    0.5f, -0.5f,  0.5f,  2.0f, 0.0f,
-    0.5f, -0.5f,  0.5f,  2.0f, 0.0f,
-   -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-   -0.5f, -0.5f, -0.5f,  0.0f, 2.0f,
+    // Back
+    4, 5, 6,
+    4, 6, 7,
 
-   -0.5f,  0.5f, -0.5f,  0.0f, 2.0f,
-    0.5f,  0.5f, -0.5f,  2.0f, 2.0f,
-    0.5f,  0.5f,  0.5f,  2.0f, 0.0f,
-    0.5f,  0.5f,  0.5f,  2.0f, 0.0f,
-   -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-   -0.5f,  0.5f, -0.5f,  0.0f, 2.0f
+    // Right
+    1, 2, 5,
+    2, 5, 6,
+
+    // Left
+    0, 4, 3,
+    4, 3, 7,
+
+    // Bottom
+    8, 1, 5,
+    8, 5, 4,
+
+    // Top
+    3, 9, 7,
+    7, 6, 9,
+
 };
 
 int main()
@@ -153,6 +152,7 @@ int main()
 
     VAO vao = VAO();
     VBO vbo = VBO(vertices, sizeof(vertices));
+    EBO ebo = EBO(indices, sizeof(indices));
 
     vao.AddAttrib(vbo, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
     vao.AddAttrib(vbo, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3*sizeof(float)));
@@ -197,13 +197,13 @@ int main()
                 model = glm::mat4(1.0f);
                 model = glm::translate(model, mazeWalls[i].position);
                 glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-                glDrawArrays(GL_TRIANGLES, 0, 36);
+                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
             }
             gravel.Bind();
             model = glm::mat4(1.0f);
             model = glm::translate(model, glm::vec3(mazeWalls[i].position.x, -1.0f, mazeWalls[i].position.z));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         }
 
 
