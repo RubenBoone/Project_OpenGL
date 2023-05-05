@@ -71,16 +71,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\Gebruiker\Desktop\CG\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Gebruiker\Desktop\CG\Project_OpenGL\Libraries\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\Gebruiker\Desktop\CG\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Gebruiker\Desktop\CG\Project_OpenGL\Libraries\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
@@ -170,6 +170,8 @@
   <ItemGroup>
     <None Include="resources\shaders\cubeShader.fs" />
     <None Include="resources\shaders\cubeShader.vs" />
+    <None Include="skyboxShader.fs" />
+    <None Include="skyboxShader.vs" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\maze.txt" />
