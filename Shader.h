@@ -1,9 +1,8 @@
-#ifndef SHADER
+#ifndef SHADER_CLASS_H
+#define SHADER_CLASS_H
 
 #include <glad/glad.h>
 #include <iostream>
-
-#endif
 
 class Shader
 {
@@ -33,6 +32,13 @@ class Shader
 	}
 public:
 	unsigned int ID;
+
 	Shader(const char* vertexShaderSource, const char* fragmentShaderSource);
+
+	void Enable();
+	void Disable();
+	void CleanUp();
 };
+
+#endif
 

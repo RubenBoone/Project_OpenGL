@@ -10,6 +10,9 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "Camera.h"
+#include "VAO.h"
+#include "VBO.h"
+#include "EBO.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -20,10 +23,14 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
+bool firstMouse = true;
+float lastX = 800.0f / 2.0;
+float lastY = 600.0 / 2.0;
+
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-Camera playerCam = Camera(SCR_WIDTH, SCR_HEIGHT);
+Camera playerCam = Camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 0.0f));
 
 struct MazeLocation
 {
@@ -34,6 +41,49 @@ struct MazeLocation
         this->position = position;
         this->isWall = isWall;
     }
+};
+
+float vertices[] = {
+    // Postion            // TextCoord
+   -0.5f, -0.5f, -0.5f,  0, 0, // Front Bottom Left
+    0.5f, -0.5f, -0.5f,  2, 0, // Front Bottom Right
+    0.5f,  0.5f, -0.5f,  2, 2, // Front Top Right
+   -0.5f,  0.5f, -0.5f,  0, 2, // Front Top Left
+
+   -0.5f, -0.5f,  0.5f,  2, 0, // Back Bottom Left
+    0.5f, -0.5f,  0.5f,  0, 0, // Back Bottom Right
+    0.5f,  0.5f,  0.5f,  0, 2, // Back Top Right
+   -0.5f,  0.5f,  0.5f,  2, 2, // Back Top Left
+
+   -0.5f, -0.5f, -0.5f,  2, 2, // Front Bottom Left for bottom
+    0.5f,  0.5f, -0.5f,  0, 0, // Back Top right for top
+};
+
+unsigned int indices[] = {
+    // Front
+    0, 1, 2,
+    0, 2, 3, 
+
+    // Back
+    4, 5, 6,
+    4, 6, 7,
+
+    // Right
+    1, 2, 5,
+    2, 5, 6,
+
+    // Left
+    0, 4, 3,
+    4, 3, 7,
+
+    // Bottom
+    8, 1, 5,
+    8, 5, 4,
+
+    // Top
+    3, 9, 7,
+    7, 6, 9,
+
 };
 
 int main()
@@ -54,8 +104,9 @@ int main()
     }
     glfwMakeContextCurrent(window);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
     // glad load all OpenGL funnction pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -99,75 +150,19 @@ int main()
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
         FileReader("resources/shaders/cubeShader.fs").getFileContent());
 
-    float vertices[] = {
-         // Postion            // TextCoord
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+    VAO vao = VAO();
+    VBO vbo = VBO(vertices, sizeof(vertices));
+    EBO ebo = EBO(indices, sizeof(indices));
 
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    vao.AddAttrib(vbo, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
+    vao.AddAttrib(vbo, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3*sizeof(float)));
 
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    vbo.UnBind();
+    vao.Unbind();
+    // EBO uBind after VAO
 
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    
-    unsigned int vbo, vao;
-    glGenBuffers(1, &vbo);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-    Texture leaves("resources/textures/leaves.png");
-    Texture gravel("resources/textures/gravel.png");
-
-    glUseProgram(shader.ID);
-    unsigned int texUniform = glGetUniformLocation(shader.ID, "TexCoord");
-    glUniform1i(texUniform, 0);
+    Texture leaves("resources/textures/leaves.png", GL_TEXTURE_2D, GL_TEXTURE0);
+    Texture gravel("resources/textures/gravel.png", GL_TEXTURE_2D, GL_TEXTURE0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -178,47 +173,37 @@ int main()
 
         // input
         processInput(window);
-        playerCam.handleCameraControls(window, deltaTime);
+        playerCam.InputHandler(window, deltaTime);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = glm::mat4(1.0f);
-        glm::mat4 projection = glm::mat4(1.0f);
-       
-        view = playerCam.getCamView();
-                                       // FOV              aspect ratio                     near  far
-        projection = glm::perspective(glm::radians(45.0f), (float) SCR_WIDTH / SCR_HEIGHT, 0.1f, 100.0f);
-
-        glUseProgram(shader.ID);
+               
+        shader.Enable();
         int modelLoc = glGetUniformLocation(shader.ID, "model");
-        int viewLoc = glGetUniformLocation(shader.ID, "view");
-        int projectionLoc = glGetUniformLocation(shader.ID, "projection");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+        glUniformMatrix4fv(glGetUniformLocation(shader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
 
         // render
-        glBindVertexArray(vao);
-        leaves.bindTexture();
-
+        vao.Bind();
 
         for (int i = 0; i < (int)mazeWalls.size(); i++)
         {
             if (mazeWalls[i].isWall)
             {
-                leaves.bindTexture();
+                leaves.Bind();
                 model = glm::mat4(1.0f);
                 model = glm::translate(model, mazeWalls[i].position);
                 glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-                glDrawArrays(GL_TRIANGLES, 0, 36);
+                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
             }
-            gravel.bindTexture();
+            gravel.Bind();
             model = glm::mat4(1.0f);
             model = glm::translate(model, glm::vec3(mazeWalls[i].position.x, -1.0f, mazeWalls[i].position.z));
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         }
 
 
@@ -227,11 +212,11 @@ int main()
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
-    leaves.deleteTexture();
-    gravel.deleteTexture();
-    glDeleteProgram(shader.ID);
+    vao.CleanUp();
+    vbo.CleanUp();
+    leaves.CleanUp();
+    gravel.CleanUp();
+    shader.CleanUp();
 
 	return 0;
 }
@@ -244,5 +229,37 @@ void processInput(GLFWwindow* window)
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
-    playerCam.mouse_callback(window, xposIn, yposIn);
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
+
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.1f; // change this value to your liking
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    playerCam.Yaw += xoffset;
+    playerCam.Pitch += yoffset;
+
+    // make sure that when pitch is out of bounds, screen doesn't get flipped
+    if (playerCam.Pitch > 89.0f)
+        playerCam.Pitch = 89.0f;
+    if (playerCam.Pitch < -89.0f)
+        playerCam.Pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(playerCam.Yaw)) * cos(glm::radians(playerCam.Pitch));
+    front.y = sin(glm::radians(playerCam.Pitch));
+    front.z = sin(glm::radians(playerCam.Yaw)) * cos(glm::radians(playerCam.Pitch));
+    playerCam.LookingDirection = glm::normalize(front);
 }
