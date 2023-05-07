@@ -19,6 +19,9 @@
     <Filter Include="resources\textures">
       <UniqueIdentifier>{97dae027-ee64-4ec5-972e-240f6d9df74f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="resources\skybox">
+      <UniqueIdentifier>{e3f1ae7a-4d3e-4b50-9d27-8a7bdddb3f36}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -82,6 +85,12 @@
     <None Include="resources\shaders\cubeShader.vs">
       <Filter>resources\shaders</Filter>
     </None>
+    <None Include="skyboxShader.fs">
+      <Filter>resources\shaders</Filter>
+    </None>
+    <None Include="skyboxShader.vs">
+      <Filter>resources\shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\textures\gravel.png">
@@ -90,10 +99,28 @@
     <Image Include="resources\textures\leaves.png">
       <Filter>resources\textures</Filter>
     </Image>
+    <Image Include="resources\skybox\back.jpg">
+      <Filter>resources\skybox</Filter>
+    </Image>
+    <Image Include="resources\skybox\bottom.jpg">
+      <Filter>resources\skybox</Filter>
+    </Image>
+    <Image Include="resources\skybox\front.jpg">
+      <Filter>resources\skybox</Filter>
+    </Image>
+    <Image Include="resources\skybox\left.jpg">
+      <Filter>resources\skybox</Filter>
+    </Image>
+    <Image Include="resources\skybox\right.jpg">
+      <Filter>resources\skybox</Filter>
+    </Image>
+    <Image Include="resources\skybox\top.jpg">
+      <Filter>resources\skybox</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\maze.txt">
-      <Filter>resources</Filter>
+      <Filter>resources\skybox</Filter>
     </Text>
   </ItemGroup>
 </Project>

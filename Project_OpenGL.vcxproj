@@ -177,6 +177,12 @@
     <Text Include="resources\maze.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="resources\skybox\back.jpg" />
+    <Image Include="resources\skybox\bottom.jpg" />
+    <Image Include="resources\skybox\front.jpg" />
+    <Image Include="resources\skybox\left.jpg" />
+    <Image Include="resources\skybox\right.jpg" />
+    <Image Include="resources\skybox\top.jpg" />
     <Image Include="resources\textures\gravel.png" />
     <Image Include="resources\textures\leaves.png" />
   </ItemGroup>
