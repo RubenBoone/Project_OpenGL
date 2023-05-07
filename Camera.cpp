@@ -20,6 +20,27 @@ glm::mat4 Camera::getCamMatrix()
     return projection * view;
 }
 
+glm::mat4 Camera::getProjection()
+{
+    glm::mat4 projection = glm::mat4(1.0f);
+    float nearPlane = 0.1f;
+    float farPlane = 100.0f;
+    projection = glm::perspective(glm::radians(FOV), ScrnWidth / ScrnHeight, nearPlane, farPlane);
+
+    return projection;
+}
+
+glm::mat4 Camera::getView()
+{
+    glm::mat4 view = glm::mat4(1.0f);
+
+    view = glm::lookAt(Position, Position + LookingDirection, UpVector);
+
+
+    return view;
+}
+
+
 void Camera::InputHandler(GLFWwindow* window, float deltaTime)
 {
     // * deltatime => to make movement smooth on every machine
