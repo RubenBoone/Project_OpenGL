@@ -88,48 +88,84 @@ unsigned int indices[] = {
 
 float skyboxVertices[] = {
     // positions          
-    -1.0f,  1.0f, -1.0f,
-    -1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
+  -20.0f,  20.0f, -20.0f,
+    -20.0f, -20.0f, -20.0f,
+     20.0f, -20.0f, -20.0f,
+     20.0f, -20.0f, -20.0f,
+     20.0f,  20.0f, -20.0f,
+    -20.0f,  20.0f, -20.0f,
 
-    -1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
+    -20.0f, -20.0f,  20.0f,
+    -20.0f, -20.0f, -20.0f,
+    -20.0f,  20.0f, -20.0f,
+    -20.0f,  20.0f, -20.0f,
+    -20.0f,  20.0f,  20.0f,
+    -20.0f, -20.0f,  20.0f,
 
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
+     20.0f, -20.0f, -20.0f,
+     20.0f, -20.0f,  20.0f,
+     20.0f,  20.0f,  20.0f,
+     20.0f,  20.0f,  20.0f,
+     20.0f,  20.0f, -20.0f,
+     20.0f, -20.0f, -20.0f,
 
-    -1.0f, -1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
+    -20.0f, -20.0f,  20.0f,
+    -20.0f,  20.0f,  20.0f,
+     20.0f,  20.0f,  20.0f,
+     20.0f,  20.0f,  20.0f,
+     20.0f, -20.0f,  20.0f,
+    -20.0f, -20.0f,  20.0f,
 
-    -1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f, -1.0f,
+    -20.0f,  20.0f, -20.0f,
+     20.0f,  20.0f, -20.0f,
+     20.0f,  20.0f,  20.0f,
+     20.0f,  20.0f,  20.0f,
+    -20.0f,  20.0f,  20.0f,
+    -20.0f,  20.0f, -20.0f,
 
-    -1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f
+    -20.0f, -20.0f, -20.0f,
+    -20.0f, -20.0f,  20.0f,
+     20.0f, -20.0f, -20.0f,
+     20.0f, -20.0f, -20.0f,
+    -20.0f, -20.0f,  20.0f,
+     20.0f, -20.0f,  20.0f
 };
+
+unsigned int loadCubemap(std::vector<std::string> faces)
+{
+    std::cout << "in func\n";
+
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        std::cout << "in loop\n";
+        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            std::cout << "In if\n";
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); 
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); 
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); 
+
+    return textureID;
+}
 
 int main()
 {
@@ -195,6 +231,10 @@ int main()
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
         FileReader("resources/shaders/cubeShader.fs").getFileContent());
 
+
+    Shader skyboxShader(FileReader("resources/shaders/skyboxShader.vs").getFileContent(),
+        FileReader("resources/shaders/skyboxShader.fs").getFileContent());
+
     VAO vao = VAO();
     VBO vbo = VBO(vertices, sizeof(vertices));
     EBO ebo = EBO(indices, sizeof(indices));
@@ -208,6 +248,34 @@ int main()
 
     Texture leaves("resources/textures/leaves.png", GL_TEXTURE_2D, GL_TEXTURE0);
     Texture gravel("resources/textures/gravel.png", GL_TEXTURE_2D, GL_TEXTURE0);
+
+
+    //Skybox vao, vbo
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+
+
+
+    std::vector<std::string> skyboxFaces; 
+    skyboxFaces.push_back("resources/skybox/right.jpg");
+    skyboxFaces.push_back("resources/skybox/left.jpg");
+    skyboxFaces.push_back("resources/skybox/top.jpg");
+    skyboxFaces.push_back("resources/skybox/bottom.jpg");
+    skyboxFaces.push_back("resources/skybox/front.jpg");
+    skyboxFaces.push_back("resources/skybox/back.jpg");
+
+
+    unsigned int cubemapTexture = loadCubemap(skyboxFaces);
+
+    skyboxShader.Enable();  
+
+
 
     while (!glfwWindowShouldClose(window))
     {
@@ -231,6 +299,22 @@ int main()
 
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
 
+        //draw skybox
+        glDepthFunc(GL_LEQUAL);
+        //glDepthMask(GL_FALSE);  
+        skyboxShader.Enable();
+        //TODO: With this view the skybox should move with camera, for one reason or another this doesnt work so skybox is huge
+        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(playerCam.getView()));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection()));
+
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+        //glDepthMask(GL_TRUE);  
+        glDepthFunc(GL_LESS);
+
         // render
         vao.Bind();
 
@@ -250,7 +334,6 @@ int main()
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         }
-
 
         // swap buffers & check events
         glfwSwapBuffers(window);
