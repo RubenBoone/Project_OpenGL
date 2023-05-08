@@ -19,6 +19,7 @@
 
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+bool CheckCollision(glm::vec3 object);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
@@ -225,8 +226,29 @@ int main()
         lastFrame = currentFrame;
 
         // input
+        
         processInput(window);
+
+        glm::vec3 lastPos = playerCam.Position;
         playerCam.InputHandler(window, deltaTime);
+        bool isCollision = CheckCollision(wallTranslations[0]);
+
+
+        for (size_t i = 0; i < wallTranslations.size(); i++)
+        {
+            isCollision = CheckCollision(wallTranslations[i]);
+            if (isCollision)
+            {
+                break;
+            }
+        }
+
+        if (isCollision)
+        {
+            playerCam.Position.x = lastPos.x;
+            playerCam.Position.z = lastPos.z;
+        }
+
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -303,4 +325,21 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     front.y = sin(glm::radians(playerCam.Pitch));
     front.z = sin(glm::radians(playerCam.Yaw)) * cos(glm::radians(playerCam.Pitch));
     playerCam.LookingDirection = glm::normalize(front);
+}
+
+bool CheckCollision(glm::vec3 object)
+{
+    glm::vec3 posBeforeColl = playerCam.Position;
+    if (playerCam.Position.x <= object.x + 0.65f &&
+        playerCam.Position.y <= object.y + 1.65f &&
+        playerCam.Position.z <= object.z + 0.65f &&
+        playerCam.Position.x >= object.x - 0.65f &&
+        playerCam.Position.y >= object.y - 1.65f &&
+        playerCam.Position.z >= object.z - 0.65f )
+    {
+        std::cout << "Collision!" << std::endl;
+        return true;
+    }
+
+    return false;
 }

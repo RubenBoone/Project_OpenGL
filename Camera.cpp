@@ -70,7 +70,7 @@ void Camera::DoJumpLogic(float deltaTime)
 
         if (ReachedMaxHeight && Position.y > 0.0f)
         {
-            Position += JumpPower * -UpVector * deltaTime;
+            Position.y += JumpPower * -1.0f * deltaTime;
 
             if (Position.y <= 0.0f)
             {
@@ -81,7 +81,7 @@ void Camera::DoJumpLogic(float deltaTime)
         }
         else
         {
-            Position += JumpPower * UpVector * deltaTime;
+            Position.y += JumpPower * 1.0f * deltaTime;
         }
     }
     else
