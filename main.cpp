@@ -43,6 +43,7 @@ struct MazeLocation
     }
 };
 
+// Cube information
 float vertices[] = {
     // Postion            // TextCoord
    -0.5f, -0.5f, -0.5f,  0, 0, // Front Bottom Left
@@ -58,7 +59,6 @@ float vertices[] = {
    -0.5f, -0.5f, -0.5f,  2, 2, // Front Bottom Left for bottom
     0.5f,  0.5f, -0.5f,  0, 0, // Back Top right for top
 };
-
 unsigned int indices[] = {
     // Front
     0, 1, 2,
@@ -114,8 +114,8 @@ int main()
         return -1;
     }
 
+    // Read maze TXT file
     std::vector<MazeLocation> mazeWalls;
-
     std::string maze = FileReader("resources/maze.txt").getFileContent();
     int i = 0;
     float x = 0.0f;
@@ -140,30 +140,83 @@ int main()
         i++;
     }
 
-    glEnable(GL_DEPTH_TEST);
+    // Creating offset list for instancing
+    std::vector<glm::vec3> floorTranslations;
+    for (size_t i = 0; i < mazeWalls.size(); i++)
+    {
+        glm::vec3 translation(mazeWalls[i].position.x, -1.0f, mazeWalls[i].position.z);
+        floorTranslations.push_back(translation);
+    }
 
-    // TODO: Transparency is a bit buggy if we just do this... Disabled it for now
-    // we use transparant texture 
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    std::vector<glm::vec3> wallTranslations;
+    for (size_t i = 0; i < mazeWalls.size(); i++)
+    {
+        if (mazeWalls[i].isWall)
+        {
+            glm::vec3 translation(mazeWalls[i].position.x, mazeWalls[i].position.y, mazeWalls[i].position.z);
+            wallTranslations.push_back(translation);
+        }
+    }
 
+    // Create shaders
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
         FileReader("resources/shaders/cubeShader.fs").getFileContent());
 
-    VAO vao = VAO();
-    VBO vbo = VBO(vertices, sizeof(vertices));
-    EBO ebo = EBO(indices, sizeof(indices));
+    // Create VAO, VBO & EBO's
+    VAO floorVAO = VAO();
+    VBO cubeVBO = VBO(vertices, sizeof(vertices));
+    EBO cubeEBO = EBO(indices, sizeof(indices));
 
-    vao.AddAttrib(vbo, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
-    vao.AddAttrib(vbo, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3*sizeof(float)));
+    floorVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
+    floorVAO.AddAttrib(cubeVBO, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3*sizeof(float)));
 
-    vbo.UnBind();
-    vao.Unbind();
-    // EBO uBind after VAO
+    unsigned int floorInstanceVBO;
+    glGenBuffers(1, &floorInstanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, floorInstanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * floorTranslations.size(), &floorTranslations[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, floorInstanceVBO);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(2, 1);
+
+    floorVAO.Unbind();
+    cubeVBO.UnBind();
+    cubeEBO.UnBind();
+
+    VAO wallVAO = VAO();
+    cubeVBO.Bind();
+    cubeEBO.Bind();
+
+    wallVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
+    wallVAO.AddAttrib(cubeVBO, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    unsigned int wallInstanceVBO;
+    glGenBuffers(1, &wallInstanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, wallInstanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * wallTranslations.size(), &wallTranslations[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, wallInstanceVBO);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(2, 1);
+
+    wallVAO.Unbind();
+    cubeVBO.UnBind();
+    cubeEBO.UnBind();
+
+    // Create Textures
     Texture leaves("resources/textures/leaves.png", GL_TEXTURE_2D, GL_TEXTURE0);
     Texture gravel("resources/textures/gravel.png", GL_TEXTURE_2D, GL_TEXTURE0);
 
+    // Enable GL functions
+    glEnable(GL_DEPTH_TEST);
+
+    // Draw loop
     while (!glfwWindowShouldClose(window))
     {
         // timing
@@ -177,43 +230,31 @@ int main()
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        glm::mat4 model = glm::mat4(1.0f);
                
+        // Transform local coordinats to view coordiantes
         shader.Enable();
-        int modelLoc = glGetUniformLocation(shader.ID, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
+        glm::mat4 model = glm::mat4(1.0f);
+        glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
 
         // render
-        vao.Bind();
+        floorVAO.Bind();
+        gravel.Bind();
+        glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0, floorTranslations.size());
 
-        for (int i = 0; i < (int)mazeWalls.size(); i++)
-        {
-            if (mazeWalls[i].isWall)
-            {
-                leaves.Bind();
-                model = glm::mat4(1.0f);
-                model = glm::translate(model, mazeWalls[i].position);
-                glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-            }
-            gravel.Bind();
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(mazeWalls[i].position.x, -1.0f, mazeWalls[i].position.z));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-        }
-
+        wallVAO.Bind();
+        leaves.Bind();
+        glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0, wallTranslations.size());
 
         // swap buffers & check events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    vao.CleanUp();
-    vbo.CleanUp();
+    // Cleanup
+    floorVAO.CleanUp();
+    cubeVBO.CleanUp();
+    wallVAO.CleanUp();
     leaves.CleanUp();
     gravel.CleanUp();
     shader.CleanUp();
