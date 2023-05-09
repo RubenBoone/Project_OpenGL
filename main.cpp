@@ -21,6 +21,9 @@
 
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+unsigned int loadCubemap(std::vector<std::string> faces);
+
+
 bool CheckCollision(glm::vec3 object);
 
 const unsigned int SCR_WIDTH = 1280;
@@ -103,11 +106,57 @@ unsigned int indices[] = {
     16, 17, 18,
     16, 18, 19,
 
-    //// Top
+    // Top
     20, 21, 22,
     20, 22, 23
 
 };
+
+float skyboxVertices[] = {
+    // positions          
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
+
 
 int main()
 {
@@ -188,6 +237,10 @@ int main()
     Shader lightShader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
                        FileReader("resources/shaders/lightShader.fs").getFileContent());
 
+
+    Shader skyboxShader(FileReader("resources/shaders/skyboxShader.vs").getFileContent(),
+        FileReader("resources/shaders/skyboxShader.fs").getFileContent());
+  
     Shader modelShader("resources/shaders/modelShader.vs", "resources/shaders/modelShader.fs");
 
     // Create VAO, VBO & EBO's
@@ -253,16 +306,40 @@ int main()
     Texture leaves("resources/textures/leaves.png", GL_TEXTURE_2D, GL_TEXTURE0);
     Texture gravel("resources/textures/gravel.png", GL_TEXTURE_2D, GL_TEXTURE0);
 
+
+    //Skybox vao, vbo
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+  
+  
+    std::vector<std::string> skyboxFaces; 
+    skyboxFaces.push_back("resources/skybox/left.jpg");
+    skyboxFaces.push_back("resources/skybox/right.jpg");
+    skyboxFaces.push_back("resources/skybox/top.jpg");
+    skyboxFaces.push_back("resources/skybox/bottom.jpg");
+    skyboxFaces.push_back("resources/skybox/front.jpg");
+    skyboxFaces.push_back("resources/skybox/back.jpg");
+
+    unsigned int cubemapTexture = loadCubemap(skyboxFaces);
+
+    skyboxShader.Enable();
+    glUniform1i(glGetUniformLocation(skyboxShader.ID, "skybox"), 0);
+
     // Enable GL functions
     glEnable(GL_DEPTH_TEST);
   
   
     //Loads diamond for testing, this can be changed later
     Model diamondModel("resources/models/diamond/source/Diamond.blend");
-
-
+  
     glm::vec3 lightPos(-1.5f, 0.5f, -0.5f);
-
+  
     // Draw loop
     while (!glfwWindowShouldClose(window))
     {
@@ -272,7 +349,6 @@ int main()
         lastFrame = currentFrame;
 
         // input
-        
         processInput(window);
 
         glm::vec3 lastPos = playerCam.Position;
@@ -345,14 +421,27 @@ int main()
         gravel.Bind();
         glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0, floorTranslations.size());
 
+        //draw skybox
+        glDepthFunc(GL_LEQUAL); 
+        skyboxShader.Enable();
+        glm::mat4 view = glm::mat4(glm::mat3(playerCam.getView()));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection()));
+
+        glBindVertexArray(skyboxVAO); 
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture); 
+        glDrawArrays(GL_TRIANGLES, 0, 36); 
+        glBindVertexArray(0); 
+        glDepthFunc(GL_LESS);
 
 
         // swap buffers & check events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    // Cleanup
+  
+  // Cleanup
     floorVAO.CleanUp();
     cubeVBO.CleanUp();
     wallVAO.CleanUp();
@@ -421,4 +510,37 @@ bool CheckCollision(glm::vec3 object)
     }
 
     return false;
+}
+
+unsigned int loadCubemap(std::vector<std::string> faces)
+{
+
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+            );
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
 }

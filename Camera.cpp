@@ -23,8 +23,8 @@ glm::mat4 Camera::getCamMatrix()
 
 glm::mat4 Camera::getProjection()
 {
-    glm::mat4 projection = glm::perspective(glm::radians(FOV), ScrnWidth / ScrnHeight, 0.1f, 100.0f);
 
+    glm::mat4 projection = glm::perspective(glm::radians(FOV), ScrnWidth / ScrnHeight, 0.1f, 100.0f);
 
     return projection;
 }
@@ -32,9 +32,7 @@ glm::mat4 Camera::getProjection()
 glm::mat4 Camera::getView()
 {
     return glm::lookAt(Position, Position + LookingDirection, UpVector);
-
 }
-
 
 
 void Camera::InputHandler(GLFWwindow* window, float deltaTime)
