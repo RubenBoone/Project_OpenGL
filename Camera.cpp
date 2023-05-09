@@ -32,8 +32,7 @@ glm::mat4 Camera::getProjection()
 
 glm::mat4 Camera::getView()
 {
-    glm::mat4 view = glm::mat4(glm::mat3(glm::lookAt(Position, Position + LookingDirection, UpVector)));
-    return view;
+    return glm::lookAt(Position, Position + LookingDirection, UpVector);
 }
 
 
