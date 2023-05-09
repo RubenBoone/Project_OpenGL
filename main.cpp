@@ -43,7 +43,8 @@ struct MazeLocation
     glm::vec3 position;
     bool isWall;
 
-    MazeLocation(glm::vec3 position, bool isWall) {
+    MazeLocation(glm::vec3 position, bool isWall)
+    {
         this->position = position;
         this->isWall = isWall;
     }
@@ -51,44 +52,63 @@ struct MazeLocation
 
 // Cube information
 float vertices[] = {
-    // Postion            // TextCoord
-   -0.5f, -0.5f, -0.5f,  0, 0, // Front Bottom Left
-    0.5f, -0.5f, -0.5f,  2, 0, // Front Bottom Right
-    0.5f,  0.5f, -0.5f,  2, 2, // Front Top Right
-   -0.5f,  0.5f, -0.5f,  0, 2, // Front Top Left
+    // Postion            // Normals           // TextCoord
+    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0, 0,
+     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  2, 0,
+     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  2, 2,
+    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0, 2,
 
-   -0.5f, -0.5f,  0.5f,  2, 0, // Back Bottom Left
-    0.5f, -0.5f,  0.5f,  0, 0, // Back Bottom Right
-    0.5f,  0.5f,  0.5f,  0, 2, // Back Top Right
-   -0.5f,  0.5f,  0.5f,  2, 2, // Back Top Left
+    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0, 0,
+     0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  2, 0,
+     0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  2, 2,
+    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0, 2,
 
-   -0.5f, -0.5f, -0.5f,  2, 2, // Front Bottom Left for bottom
-    0.5f,  0.5f, -0.5f,  0, 0, // Back Top right for top
+    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0, 0,
+    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  2, 0,
+    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  2, 2,
+    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0, 2,
+
+     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0, 0,
+     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  2, 0,
+     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  2, 2,
+     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0, 2,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0, 0,
+     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  2, 0,
+     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  2, 2,
+    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0, 2,
+
+    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0, 0,
+     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  2, 0,
+     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  2, 2,
+    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0, 2,
+
 };
+
 unsigned int indices[] = {
     // Front
     0, 1, 2,
-    0, 2, 3, 
+    0, 2, 3,
 
     // Back
     4, 5, 6,
     4, 6, 7,
 
-    // Right
-    1, 2, 5,
-    2, 5, 6,
-
     // Left
-    0, 4, 3,
-    4, 3, 7,
+    8, 9, 10,
+    8, 10, 11,
+
+    // Right
+    12, 13, 14,
+    12, 14, 15,
 
     // Bottom
-    8, 1, 5,
-    8, 5, 4,
+    16, 17, 18,
+    16, 18, 19,
 
     // Top
-    3, 9, 7,
-    7, 6, 9,
+    20, 21, 22,
+    20, 22, 23
 
 };
 
@@ -176,18 +196,18 @@ int main()
     {
         switch (maze[i])
         {
-        case ' ':
-            mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), false));
-            x--;
-            break;
-        case '#':
-            mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), true));
-            x--;
-            break;
-        case '\n':
-            x = 0.0f;
-            z -= 1.0f;
-            break;
+            case ' ':
+                mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), false));
+                x--;
+                break;
+            case '#':
+                mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), true));
+                x--;
+                break;
+            case '\n':
+                x = 0.0f;
+                z -= 1.0f;
+                break;
         }
         i++;
     }
@@ -212,7 +232,10 @@ int main()
 
     // Create shaders
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
-        FileReader("resources/shaders/cubeShader.fs").getFileContent());
+                  FileReader("resources/shaders/cubeShader.fs").getFileContent());
+
+    Shader lightShader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
+                       FileReader("resources/shaders/lightShader.fs").getFileContent());
 
 
     Shader skyboxShader(FileReader("resources/shaders/skyboxShader.vs").getFileContent(),
@@ -225,8 +248,9 @@ int main()
     VBO cubeVBO = VBO(vertices, sizeof(vertices));
     EBO cubeEBO = EBO(indices, sizeof(indices));
 
-    floorVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
-    floorVAO.AddAttrib(cubeVBO, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3*sizeof(float)));
+    floorVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 8 * sizeof(float), 0);
+    floorVAO.AddAttrib(cubeVBO, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    floorVAO.AddAttrib(cubeVBO, 3, 2, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 
     unsigned int floorInstanceVBO;
     glGenBuffers(1, &floorInstanceVBO);
@@ -248,8 +272,9 @@ int main()
     cubeVBO.Bind();
     cubeEBO.Bind();
 
-    wallVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
-    wallVAO.AddAttrib(cubeVBO, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    wallVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 8 * sizeof(float), 0);
+    wallVAO.AddAttrib(cubeVBO, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    wallVAO.AddAttrib(cubeVBO, 3, 2, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 
     unsigned int wallInstanceVBO;
     glGenBuffers(1, &wallInstanceVBO);
@@ -264,6 +289,16 @@ int main()
     glVertexAttribDivisor(2, 1);
 
     wallVAO.Unbind();
+    cubeVBO.UnBind();
+    cubeEBO.UnBind();
+
+    VAO lightVAO = VAO();
+    cubeVBO.Bind();
+    cubeEBO.Bind();
+
+    lightVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+
+    lightVAO.Unbind();
     cubeVBO.UnBind();
     cubeEBO.UnBind();
 
@@ -302,7 +337,7 @@ int main()
   
     //Loads diamond for testing, this can be changed later
     Model diamondModel("resources/models/diamond/source/Diamond.blend");
-
+  
     glm::vec3 lightPos(-1.5f, 0.5f, -0.5f);
   
     // Draw loop
@@ -342,6 +377,29 @@ int main()
 
         glm::mat4 model = glm::mat4(1.0f);
 
+        lightShader.Enable();
+        lightVAO.Bind();
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2));
+        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
+
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+        //Draw 3d model
+        modelShader.Enable();
+
+        glm::mat4 view = playerCam.getView();
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection()));
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+
+        glm::mat4 assimpModel;
+        assimpModel = glm::translate(assimpModel, glm::vec3(0.0f, -1.75f, 0.0f));
+        assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
+        
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel));
+        diamondModel.Draw(modelShader);
+      
         // Transform local coordinats to view coordiantes
         shader.Enable();
         model = glm::mat4(1.0f);
@@ -377,6 +435,7 @@ int main()
         glBindVertexArray(0); 
         glDepthFunc(GL_LESS);
 
+
         // swap buffers & check events
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -393,7 +452,7 @@ int main()
     return 0;
 }
 
-void processInput(GLFWwindow* window) 
+void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
