@@ -21,6 +21,9 @@
     </Filter>
     <Filter Include="resources\skybox">
       <UniqueIdentifier>{e3f1ae7a-4d3e-4b50-9d27-8a7bdddb3f36}</UniqueIdentifier>
+     </Filter>
+    <Filter Include="resources\models">
+      <UniqueIdentifier>{484b679b-5452-4651-a44e-3e0759e2dbc7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -77,6 +80,12 @@
     <ClInclude Include="EBO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\cubeShader.fs">
@@ -89,6 +98,12 @@
       <Filter>resources\shaders</Filter>
     </None>
     <None Include="skyboxShader.vs">
+      <Filter>resources\shaders</Filter>
+     </None>
+    <None Include="modelShader.vs">
+      <Filter>resources\shaders</Filter>
+    </None>
+    <None Include="modelShader.fs">
       <Filter>resources\shaders</Filter>
     </None>
   </ItemGroup>

@@ -1,5 +1,6 @@
 #include "Camera.h"
 
+
 Camera::Camera(float screenWidth, float screenHeight, glm::vec3 startPosition)
 {
     ScrnWidth = screenWidth;
@@ -22,10 +23,8 @@ glm::mat4 Camera::getCamMatrix()
 
 glm::mat4 Camera::getProjection()
 {
-    glm::mat4 projection = glm::mat4(1.0f);
-    float nearPlane = 0.1f;
-    float farPlane = 100.0f;
-    projection = glm::perspective(glm::radians(FOV), ScrnWidth / ScrnHeight, nearPlane, farPlane);
+
+    glm::mat4 projection = glm::perspective(glm::radians(FOV), ScrnWidth / ScrnHeight, 0.1f, 100.0f);
 
     return projection;
 }
@@ -86,7 +85,7 @@ void Camera::DoJumpLogic(float deltaTime)
 
         if (ReachedMaxHeight && Position.y > 0.0f)
         {
-            Position += JumpPower * -UpVector * deltaTime;
+            Position.y += JumpPower * -1.0f * deltaTime;
 
             if (Position.y <= 0.0f)
             {
@@ -97,7 +96,7 @@ void Camera::DoJumpLogic(float deltaTime)
         }
         else
         {
-            Position += JumpPower * UpVector * deltaTime;
+            Position.y += JumpPower * 1.0f * deltaTime;
         }
     }
     else

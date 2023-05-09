@@ -13,6 +13,8 @@
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
+#include "Model.h"
+
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -21,6 +23,8 @@ void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 unsigned int loadCubemap(std::vector<std::string> faces);
 
+
+bool CheckCollision(glm::vec3 object);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
@@ -45,6 +49,7 @@ struct MazeLocation
     }
 };
 
+// Cube information
 float vertices[] = {
     // Postion            // TextCoord
    -0.5f, -0.5f, -0.5f,  0, 0, // Front Bottom Left
@@ -60,7 +65,6 @@ float vertices[] = {
    -0.5f, -0.5f, -0.5f,  2, 2, // Front Bottom Left for bottom
     0.5f,  0.5f, -0.5f,  0, 0, // Back Top right for top
 };
-
 unsigned int indices[] = {
     // Front
     0, 1, 2,
@@ -162,8 +166,8 @@ int main()
         return -1;
     }
 
+    // Read maze TXT file
     std::vector<MazeLocation> mazeWalls;
-
     std::string maze = FileReader("resources/maze.txt").getFileContent();
     int i = 0;
     float x = 0.0f;
@@ -188,31 +192,82 @@ int main()
         i++;
     }
 
-    glEnable(GL_DEPTH_TEST);
+    // Creating offset list for instancing
+    std::vector<glm::vec3> floorTranslations;
+    for (size_t i = 0; i < mazeWalls.size(); i++)
+    {
+        glm::vec3 translation(mazeWalls[i].position.x, -1.0f, mazeWalls[i].position.z);
+        floorTranslations.push_back(translation);
+    }
 
-    // TODO: Transparency is a bit buggy if we just do this... Disabled it for now
-    // we use transparant texture 
-    //glEnable(GL_BLEND);
-    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    std::vector<glm::vec3> wallTranslations;
+    for (size_t i = 0; i < mazeWalls.size(); i++)
+    {
+        if (mazeWalls[i].isWall)
+        {
+            glm::vec3 translation(mazeWalls[i].position.x, mazeWalls[i].position.y, mazeWalls[i].position.z);
+            wallTranslations.push_back(translation);
+        }
+    }
 
+    // Create shaders
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
         FileReader("resources/shaders/cubeShader.fs").getFileContent());
 
 
     Shader skyboxShader(FileReader("resources/shaders/skyboxShader.vs").getFileContent(),
         FileReader("resources/shaders/skyboxShader.fs").getFileContent());
+  
+    Shader modelShader("resources/shaders/modelShader.vs", "resources/shaders/modelShader.fs");
 
-    VAO vao = VAO();
-    VBO vbo = VBO(vertices, sizeof(vertices));
-    EBO ebo = EBO(indices, sizeof(indices));
+    // Create VAO, VBO & EBO's
+    VAO floorVAO = VAO();
+    VBO cubeVBO = VBO(vertices, sizeof(vertices));
+    EBO cubeEBO = EBO(indices, sizeof(indices));
 
-    vao.AddAttrib(vbo, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
-    vao.AddAttrib(vbo, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3*sizeof(float)));
+    floorVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
+    floorVAO.AddAttrib(cubeVBO, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3*sizeof(float)));
 
-    vbo.UnBind();
-    vao.Unbind();
-    // EBO uBind after VAO
+    unsigned int floorInstanceVBO;
+    glGenBuffers(1, &floorInstanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, floorInstanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * floorTranslations.size(), &floorTranslations[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, floorInstanceVBO);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(2, 1);
+
+    floorVAO.Unbind();
+    cubeVBO.UnBind();
+    cubeEBO.UnBind();
+
+    VAO wallVAO = VAO();
+    cubeVBO.Bind();
+    cubeEBO.Bind();
+
+    wallVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 5 * sizeof(float), 0);
+    wallVAO.AddAttrib(cubeVBO, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+
+    unsigned int wallInstanceVBO;
+    glGenBuffers(1, &wallInstanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, wallInstanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * wallTranslations.size(), &wallTranslations[0], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glEnableVertexAttribArray(2);
+    glBindBuffer(GL_ARRAY_BUFFER, wallInstanceVBO);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribDivisor(2, 1);
+
+    wallVAO.Unbind();
+    cubeVBO.UnBind();
+    cubeEBO.UnBind();
+
+    // Create Textures
     Texture leaves("resources/textures/leaves.png", GL_TEXTURE_2D, GL_TEXTURE0);
     Texture gravel("resources/textures/gravel.png", GL_TEXTURE_2D, GL_TEXTURE0);
 
@@ -226,11 +281,8 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-
-   
-
-
-
+  
+  
     std::vector<std::string> skyboxFaces; 
     skyboxFaces.push_back("resources/skybox/left.jpg");
     skyboxFaces.push_back("resources/skybox/right.jpg");
@@ -239,15 +291,21 @@ int main()
     skyboxFaces.push_back("resources/skybox/front.jpg");
     skyboxFaces.push_back("resources/skybox/back.jpg");
 
-
-
     unsigned int cubemapTexture = loadCubemap(skyboxFaces);
 
     skyboxShader.Enable();
     glUniform1i(glGetUniformLocation(skyboxShader.ID, "skybox"), 0);
 
+    // Enable GL functions
+    glEnable(GL_DEPTH_TEST);
+  
+  
+    //Loads diamond for testing, this can be changed later
+    Model diamondModel("resources/models/diamond/source/Diamond.blend");
 
-
+    glm::vec3 lightPos(-1.5f, 0.5f, -0.5f);
+  
+    // Draw loop
     while (!glfwWindowShouldClose(window))
     {
         // timing
@@ -257,56 +315,73 @@ int main()
 
         // input
         processInput(window);
-        playerCam.InputHandler(window, deltaTime);
 
+        glm::vec3 lastPos = playerCam.Position;
+        playerCam.InputHandler(window, deltaTime);
+        bool isCollision = CheckCollision(wallTranslations[0]);
+
+
+        for (size_t i = 0; i < wallTranslations.size(); i++)
+        {
+            isCollision = CheckCollision(wallTranslations[i]);
+            if (isCollision)
+            {
+                break;
+            }
+        }
+
+        if (isCollision)
+        {
+            playerCam.Position.x = lastPos.x;
+            playerCam.Position.z = lastPos.z;
+        }
 
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 model = glm::mat4(1.0f);
-               
+
+        lightShader.Enable();
+        lightVAO.Bind();
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2));
+        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
+
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+
+
+        // Transform local coordinats to view coordiantes
         shader.Enable();
-
-        int modelLoc = glGetUniformLocation(shader.ID, "model");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
+        model = glm::mat4(1.0f);
+        glUniform4f(glGetUniformLocation(shader.ID, "lightColor"), 1.0f, 1.0f, 1.0f, 1.0f);
+        glUniform3f(glGetUniformLocation(shader.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+        glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
-
-       
-        
-
+        glUniform3f(glGetUniformLocation(shader.ID, "viewPos"), playerCam.Position.x, playerCam.Position.y, playerCam.Position.z);
+        glUniform1f(glGetUniformLocation(shader.ID, "light.constant"), 1.0f);
+        glUniform1f(glGetUniformLocation(shader.ID, "light.linear"), 0.09f);
+        glUniform1f(glGetUniformLocation(shader.ID, "light.quadratic"), 0.03f);
 
         // render
-             
-        vao.Bind();
+        wallVAO.Bind();
+        leaves.Bind();
+        glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0, wallTranslations.size());
 
-        for (int i = 0; i < (int)mazeWalls.size(); i++)
-        {
-            if (mazeWalls[i].isWall)
-            {
-                leaves.Bind();
-                model = glm::mat4(1.0f);
-                model = glm::translate(model, mazeWalls[i].position);
-                glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-                glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-            }
-            gravel.Bind();
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(mazeWalls[i].position.x, -1.0f, mazeWalls[i].position.z));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-        }
+        floorVAO.Bind();
+        gravel.Bind();
+        glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0, floorTranslations.size());
 
         //draw skybox
         glDepthFunc(GL_LEQUAL); 
         skyboxShader.Enable();
-        glm::mat4 view = glm::mat4(glm::mat3(playerCam.getView()));   
+        glm::mat4 view = glm::mat4(glm::mat3(playerCam.getView()));
         glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection()));
 
         glBindVertexArray(skyboxVAO); 
-        glActiveTexture(GL_TEXTURE0);  
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture); 
         glDrawArrays(GL_TRIANGLES, 0, 36); 
         glBindVertexArray(0); 
@@ -316,14 +391,16 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    vao.CleanUp();
-    vbo.CleanUp();
+  
+  // Cleanup
+    floorVAO.CleanUp();
+    cubeVBO.CleanUp();
+    wallVAO.CleanUp();
     leaves.CleanUp();
     gravel.CleanUp();
     shader.CleanUp();
 
-	return 0;
+    return 0;
 }
 
 void processInput(GLFWwindow* window) 
@@ -367,6 +444,23 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     front.y = sin(glm::radians(playerCam.Pitch));
     front.z = sin(glm::radians(playerCam.Yaw)) * cos(glm::radians(playerCam.Pitch));
     playerCam.LookingDirection = glm::normalize(front);
+}
+
+bool CheckCollision(glm::vec3 object)
+{
+    glm::vec3 posBeforeColl = playerCam.Position;
+    if (playerCam.Position.x <= object.x + 0.65f &&
+        playerCam.Position.y <= object.y + 1.65f &&
+        playerCam.Position.z <= object.z + 0.65f &&
+        playerCam.Position.x >= object.x - 0.65f &&
+        playerCam.Position.y >= object.y - 1.65f &&
+        playerCam.Position.z >= object.z - 0.65f )
+    {
+        std::cout << "Collision!" << std::endl;
+        return true;
+    }
+
+    return false;
 }
 
 unsigned int loadCubemap(std::vector<std::string> faces)
