@@ -13,6 +13,8 @@
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
+#include "Model.h"
+
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -150,6 +152,9 @@ int main()
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
         FileReader("resources/shaders/cubeShader.fs").getFileContent());
 
+    Shader modelShader("resources/shaders/modelShader.vs", "resources/shaders/modelShader.fs");
+
+
     VAO vao = VAO();
     VBO vbo = VBO(vertices, sizeof(vertices));
     EBO ebo = EBO(indices, sizeof(indices));
@@ -163,6 +168,11 @@ int main()
 
     Texture leaves("resources/textures/leaves.png", GL_TEXTURE_2D, GL_TEXTURE0);
     Texture gravel("resources/textures/gravel.png", GL_TEXTURE_2D, GL_TEXTURE0);
+
+
+
+    //Loads diamond for testing, this can be changed later
+    Model diamondModel("resources/models/diamond/source/Diamond.blend");
 
     while (!glfwWindowShouldClose(window))
     {
@@ -179,6 +189,23 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::mat4 model = glm::mat4(1.0f);
+
+
+        //Draw 3d model
+        modelShader.Enable();
+
+        glm::mat4 view = playerCam.getView();
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection()));
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+
+        glm::mat4 assimpModel;
+        assimpModel = glm::translate(assimpModel, glm::vec3(0.0f, -1.75f, 0.0f));
+        assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
+        
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel));
+        diamondModel.Draw(modelShader);
+
+
                
         shader.Enable();
         int modelLoc = glGetUniformLocation(shader.ID, "model");
