@@ -342,16 +342,6 @@ int main()
 
         glm::mat4 model = glm::mat4(1.0f);
 
-        lightShader.Enable();
-        lightVAO.Bind();
-        model = glm::translate(model, lightPos);
-        model = glm::scale(model, glm::vec3(0.2));
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
-
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-
-
         // Transform local coordinats to view coordiantes
         shader.Enable();
         model = glm::mat4(1.0f);
