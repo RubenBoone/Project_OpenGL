@@ -42,11 +42,13 @@ struct MazeLocation
 {
     glm::vec3 position;
     bool isWall;
+    bool isLight;
 
-    MazeLocation(glm::vec3 position, bool isWall)
+    MazeLocation(glm::vec3 position, bool isWall, bool isLight)
     {
         this->position = position;
         this->isWall = isWall;
+        this->isLight = isLight;
     }
 };
 
@@ -197,11 +199,17 @@ int main()
         switch (maze[i])
         {
             case ' ':
-                mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), false));
+                mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), false, false));
                 x--;
                 break;
             case '#':
-                mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), true));
+                mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), true, false));
+                x--;
+                break;
+            case 'x':
+                //x needs both torch AND floor
+                mazeWalls.push_back(MazeLocation(glm::vec3(x, -0.35f, z), false, true));
+                mazeWalls.push_back(MazeLocation(glm::vec3(x, 0.0f, z), false, false));
                 x--;
                 break;
             case '\n':
@@ -221,12 +229,18 @@ int main()
     }
 
     std::vector<glm::vec3> wallTranslations;
+    std::vector<glm::vec3> torchTranslations;
     for (size_t i = 0; i < mazeWalls.size(); i++)
     {
         if (mazeWalls[i].isWall)
         {
             glm::vec3 translation(mazeWalls[i].position.x, mazeWalls[i].position.y, mazeWalls[i].position.z);
             wallTranslations.push_back(translation);
+        }
+        else if (mazeWalls[i].isLight)
+        {
+            glm::vec3 translation(mazeWalls[i].position.x, mazeWalls[i].position.y, mazeWalls[i].position.z);
+            torchTranslations.push_back(translation);
         }
     }
 
@@ -384,26 +398,33 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view)); 
 
         glm::mat4 assimpModel = glm::mat4(1.0f);
-        assimpModel = glm::translate(assimpModel, glm::vec3(0.0f, 0.0f, 0.0f));
-        assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
-        assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+       /* assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
+        assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));*/
             //Model = glm::rotate(Model, angle_in_radians, glm::vec3(x, y, z)); // where x, y, z is axis of rotation (e.g. 0 1 0)
 
-        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel)); 
-        diamondModel.Draw(modelShader); 
+
+        for (size_t i = 0; i < torchTranslations.size(); i++)
+        {
+            assimpModel = glm::mat4(1.0f);
+            assimpModel = glm::translate(assimpModel, glm::vec3(torchTranslations[i].x, torchTranslations[i].y, torchTranslations[i].z));
+            assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
+            assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel));
+            diamondModel.Draw(modelShader);
+        }
         //--
 
 
         glm::mat4 model = glm::mat4(1.0f);
 
-        lightShader.Enable();
+       /* lightShader.Enable();
         lightVAO.Bind();
         model = glm::translate(model, lightPos);
         model = glm::scale(model, glm::vec3(0.2));
         glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
         
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);*/
 
       
       
@@ -418,6 +439,7 @@ int main()
         glUniform1f(glGetUniformLocation(shader.ID, "light.constant"), 1.0f);
         glUniform1f(glGetUniformLocation(shader.ID, "light.linear"), 0.09f);
         glUniform1f(glGetUniformLocation(shader.ID, "light.quadratic"), 0.03f);
+
 
         // render
         wallVAO.Bind();
