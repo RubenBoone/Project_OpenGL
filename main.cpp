@@ -277,7 +277,7 @@ int main()
         }
     }
 
-    lightingList[0].isOn = false;
+    lightingList[0].isOn = true;
 
     // Create shaders
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
@@ -667,6 +667,7 @@ void DoPickAction()
 {
     float pixels[4];
     glReadPixels(SCR_WIDTH / 2, SCR_HEIGHT / 2, 1, 1, GL_RGB, GL_FLOAT, &pixels);
+    bool actionDone = false;
 
     for (size_t i = 0; i < lightingList.size(); i++)
     {
@@ -674,7 +675,14 @@ void DoPickAction()
         if (lightingList[i].pickingValue.x == pixels[0])
         {
             lightingList[i].isOn = !lightingList[i].isOn;
-            std::cout << "turned on torch" << std::endl;
+            if (lightingList[i].isOn)
+            {
+                Jukebox->play2D("resources/audio/ignite.ogg", false);                
+            }
+            else
+            {
+                Jukebox->play2D("resources/audio/extinguish.ogg", false);                
+            }
         }
     }
 
