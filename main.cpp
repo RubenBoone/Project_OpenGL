@@ -358,9 +358,8 @@ int main()
   
     //Loads diamond for testing, this can be changed later
     Model diamondModel("resources/models/torch/Torch.obj");
-  
-    glm::vec3 lightPos(-1.5f, 0.5f, -0.5f);
-  
+    glm::mat4 model = glm::mat4(1.0f);
+
     // Draw loop
     while (!glfwWindowShouldClose(window))
     {
@@ -403,12 +402,11 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection())); 
         glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view)); 
 
+        glUniform4f(glGetUniformLocation(modelShader.ID, "lightColor"), 1.0f, 1.0f, 1.0f, 1.0f);
+        glUniform1f(glGetUniformLocation(modelShader.ID, "numOfLights"), torchTranslations.size());
+        glUniform3f(glGetUniformLocation(modelShader.ID, "viewPos"), playerCam.Position.x, playerCam.Position.y, playerCam.Position.z);
+
         glm::mat4 assimpModel = glm::mat4(1.0f);
-       /* assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
-        assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));*/
-            //Model = glm::rotate(Model, angle_in_radians, glm::vec3(x, y, z)); // where x, y, z is axis of rotation (e.g. 0 1 0)
-
-
         for (size_t i = 0; i < torchTranslations.size(); i++)
         {
             assimpModel = glm::mat4(1.0f);
@@ -416,36 +414,33 @@ int main()
             assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
             assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
             glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel));
+            std::string index = to_string(i);
+
+            glUniform3f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].position").c_str()), torchTranslations[i].x, torchTranslations[i].y + 1, torchTranslations[i].z);
+            glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].constant").c_str()), 0.2f);
+            glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].linear").c_str()), 0.7f);
+            glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].quadratic").c_str()), 1.8f);
             diamondModel.Draw(modelShader);
         }
-        //--
-
-
-        glm::mat4 model = glm::mat4(1.0f);
-
-       /* lightShader.Enable();
-        lightVAO.Bind();
-        model = glm::translate(model, lightPos);
-        model = glm::scale(model, glm::vec3(0.2));
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
-        
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);*/
-
-      
       
         // Transform local coordinats to view coordiantes
         shader.Enable();
         model = glm::mat4(1.0f);
         glUniform4f(glGetUniformLocation(shader.ID, "lightColor"), 1.0f, 1.0f, 1.0f, 1.0f);
-        glUniform3f(glGetUniformLocation(shader.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
+        glUniform1f(glGetUniformLocation(shader.ID, "numOfLights"), torchTranslations.size());
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
         glUniform3f(glGetUniformLocation(shader.ID, "viewPos"), playerCam.Position.x, playerCam.Position.y, playerCam.Position.z);
-        glUniform1f(glGetUniformLocation(shader.ID, "light.constant"), 1.0f);
-        glUniform1f(glGetUniformLocation(shader.ID, "light.linear"), 0.09f);
-        glUniform1f(glGetUniformLocation(shader.ID, "light.quadratic"), 0.03f);
 
+        for (size_t i = 0; i < torchTranslations.size(); i++)
+        {
+            std::string index = to_string(i);
+
+            glUniform3f(glGetUniformLocation(shader.ID, ("light[" + index + "].position").c_str()), torchTranslations[i].x, torchTranslations[i].y, torchTranslations[i].z);
+            glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].constant").c_str()), 1.0f);
+            glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].linear").c_str()), 0.7f);
+            glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].quadratic").c_str()), 1.8f);
+        }
 
         // render
         wallVAO.Bind();
