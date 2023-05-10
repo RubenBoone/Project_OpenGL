@@ -1,6 +1,9 @@
 #version 330 core
+#define MAX_LIGHTS 64
 
-struct Light {	
+struct Light {
+    vec3 position;
+
     float constant;
     float linear;
     float quadratic;
@@ -16,33 +19,45 @@ uniform vec4 lightColor;
 uniform vec3 lightPos;
 uniform vec3 viewPos;
 uniform sampler2D Text;
-uniform Light light;
+uniform float numOfLights;
 
-void main()
+uniform Light light[MAX_LIGHTS];
+
+vec4 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
+
     float ambientStrenght = 0.1;
     vec4 ambient = ambientStrenght * lightColor;
 
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
-
-    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 lightDir = normalize(light.position - fragPos);
+    vec3 reflectDir = reflect(-lightDir, normal);
+        float diff = max(dot(normal, lightDir), 0.0);
     vec4 diffuse = diff * lightColor;
 
     float specularStrenght = 0.5;
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     vec4 specular = (specularStrenght * spec * lightColor); 
 
-    float distance    = length(lightPos - FragPos);
+    float distance    = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     ambient  *= attenuation;  
     diffuse  *= attenuation;
     specular *= attenuation; 
 
-    vec4 result = (ambient + diffuse + specular) * texture(Text, TexCoord);
-    FragColor = result;
+    return (ambient + diffuse + specular);
+}
+
+void main()
+{
+    vec3 norm = normalize(Normal);
+
+    vec3 viewDir = normalize(viewPos - FragPos);
+
+    vec4 result;
+
+    for (int i = 0; i < numOfLights; i++)
+        result += CalcPointLight(light[i], norm, FragPos, viewDir);
+
+    FragColor = result * texture(Text, TexCoord);
 }
