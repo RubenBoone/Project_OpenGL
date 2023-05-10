@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
+#include <irrklang/irrKlang.h>
 
 #include "FileReader.h"
 #include "Shader.h"
@@ -37,6 +38,9 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 Camera playerCam = Camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 0.0f));
+
+irrklang::ISoundEngine* Jukebox = irrklang::createIrrKlangDevice();
+
 
 struct MazeLocation
 {
@@ -187,6 +191,8 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    Jukebox->play2D("resources/audio/minecraft_sweden.mp3", true);
 
     // Read maze TXT file
     std::vector<MazeLocation> mazeWalls;
