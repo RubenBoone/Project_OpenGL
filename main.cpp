@@ -22,6 +22,8 @@
 
 void processInput(GLFWwindow* window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void DoPickAction();
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 unsigned int loadCubemap(std::vector<std::string> faces);
 
 
@@ -31,11 +33,13 @@ const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
 bool firstMouse = true;
-float lastX = 800.0f / 2.0;
-float lastY = 600.0 / 2.0;
+float lastX = SCR_WIDTH / 2.0;
+float lastY = SCR_HEIGHT / 2.0;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+bool CanPick = false;
 
 Camera playerCam = Camera(SCR_WIDTH, SCR_HEIGHT, glm::vec3(0.0f, 0.0f, 0.0f));
 
@@ -55,6 +59,22 @@ struct MazeLocation
         this->isLight = isLight;
     }
 };
+
+struct Light
+{
+    glm::vec3 position;
+    glm::vec3 pickingValue;
+    bool isOn;
+
+    Light(glm::vec3 position, glm::vec3 pickingValue, bool isOn)
+    {
+        this->position = position;
+        this->pickingValue = pickingValue;
+        this->isOn = isOn;
+    }
+};
+
+std::vector<Light> lightingList;
 
 // Cube information
 float vertices[] = {
@@ -183,6 +203,7 @@ int main()
     glfwMakeContextCurrent(window);
 
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // glad load all OpenGL funnction pointers
@@ -192,6 +213,7 @@ int main()
         return -1;
     }
 
+    Jukebox->setSoundVolume(0.1f);
     Jukebox->play2D("resources/audio/minecraft_sweden.mp3", true);
 
     // Read maze TXT file
@@ -235,7 +257,8 @@ int main()
     }
 
     std::vector<glm::vec3> wallTranslations;
-    std::vector<glm::vec3> torchTranslations;
+
+    float c = 0.0f;
     for (size_t i = 0; i < mazeWalls.size(); i++)
     {
         if (mazeWalls[i].isWall)
@@ -245,17 +268,23 @@ int main()
         }
         else if (mazeWalls[i].isLight)
         {
-            glm::vec3 translation(mazeWalls[i].position.x, mazeWalls[i].position.y, mazeWalls[i].position.z);
-            torchTranslations.push_back(translation);
+            glm::vec3 position(mazeWalls[i].position.x, mazeWalls[i].position.y, mazeWalls[i].position.z);
+            glm::vec3 picking((1.0f/255)*c, 0.0f, 0.0f);
+            c++;
+
+            lightingList.push_back(Light(position, picking, false));
+
         }
     }
+
+    lightingList[0].isOn = true;
 
     // Create shaders
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
                   FileReader("resources/shaders/cubeShader.fs").getFileContent());
 
-    Shader lightShader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
-                       FileReader("resources/shaders/lightShader.fs").getFileContent());
+    Shader pickShader(FileReader("resources/shaders/pickShader.vs").getFileContent(),
+                       FileReader("resources/shaders/pickShader.fs").getFileContent());
 
 
     Shader skyboxShader(FileReader("resources/shaders/skyboxShader.vs").getFileContent(),
@@ -313,19 +342,31 @@ int main()
     cubeVBO.UnBind();
     cubeEBO.UnBind();
 
-    VAO lightVAO = VAO();
-    cubeVBO.Bind();
-    cubeEBO.Bind();
-
-    lightVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
-
-    lightVAO.Unbind();
-    cubeVBO.UnBind();
-    cubeEBO.UnBind();
-
     // Create Textures
     Texture leaves("resources/textures/leaves.png", GL_TEXTURE_2D, GL_TEXTURE0);
     Texture gravel("resources/textures/gravel.png", GL_TEXTURE_2D, GL_TEXTURE0);
+
+    VAO pickVAO = VAO();
+    cubeVBO.Bind();
+    cubeEBO.Bind();
+
+    pickVAO.AddAttrib(cubeVBO, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+
+    unsigned int pick_texture;
+    glGenTextures(1, &pick_texture);
+    glBindTexture(GL_TEXTURE_2D, pick_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, 0);
+
+    unsigned int FBO;
+    glGenFramebuffers(1, &FBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pick_texture, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    pickVAO.Unbind();
+    cubeVBO.UnBind();
+    cubeEBO.UnBind();
 
 
     //Skybox vao, vbo
@@ -355,11 +396,11 @@ int main()
     // Enable GL functions
     glEnable(GL_DEPTH_TEST);
   
-  
     //Loads diamond for testing, this can be changed later
     Model diamondModel("resources/models/torch/Torch.obj");
     glm::mat4 model = glm::mat4(1.0f);
-
+    glm::vec4 lightOn = glm::vec4(1.0f);
+    glm::vec4 lightOff = glm::vec4(0.0f);
     // Draw loop
     while (!glfwWindowShouldClose(window))
     {
@@ -370,10 +411,12 @@ int main()
 
         // input
         processInput(window);
-
         glm::vec3 lastPos = playerCam.Position;
         playerCam.InputHandler(window, deltaTime);
         bool isCollision = CheckCollision(wallTranslations[0]);
+
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
         for (size_t i = 0; i < wallTranslations.size(); i++)
@@ -390,54 +433,93 @@ int main()
             playerCam.Position.x = lastPos.x;
             playerCam.Position.z = lastPos.z;
         }
+        glm::mat4 view = playerCam.getView();
+        
+        pickVAO.Bind();
+        pickShader.Enable();
+        glUniformMatrix4fv(glGetUniformLocation(pickShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection()));
+        glUniformMatrix4fv(glGetUniformLocation(pickShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+        glClearColor(1.0, 1.0, 1.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        for (size_t i = 0; i < lightingList.size(); i++)
+        {
+            glm::mat4 pick_model = glm::mat4(1.0f);
+            pick_model = glm::translate(pick_model, glm::vec3(lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z));
+            pick_model = glm::scale(pick_model, glm::vec3(0.1f, 0.2f, 0.1f));
+            glUniformMatrix4fv(glGetUniformLocation(pickShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(pick_model));
+            glUniform4f(glGetUniformLocation(pickShader.ID, "color"), lightingList[i].pickingValue.x, lightingList[i].pickingValue.x, lightingList[i].pickingValue.x, 1.0f);
+            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        }
+
+        if (CanPick)
+        {
+            DoPickAction();
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         //Draw 3d model
         modelShader.Enable(); 
 
-        glm::mat4 view = playerCam.getView(); 
         glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection())); 
         glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view)); 
 
         glUniform4f(glGetUniformLocation(modelShader.ID, "lightColor"), 1.0f, 1.0f, 1.0f, 1.0f);
-        glUniform1f(glGetUniformLocation(modelShader.ID, "numOfLights"), torchTranslations.size());
+        glUniform1f(glGetUniformLocation(modelShader.ID, "numOfLights"), lightingList.size());
         glUniform3f(glGetUniformLocation(modelShader.ID, "viewPos"), playerCam.Position.x, playerCam.Position.y, playerCam.Position.z);
 
         glm::mat4 assimpModel = glm::mat4(1.0f);
-        for (size_t i = 0; i < torchTranslations.size(); i++)
+        for (size_t i = 0; i < lightingList.size(); i++)
         {
             assimpModel = glm::mat4(1.0f);
-            assimpModel = glm::translate(assimpModel, glm::vec3(torchTranslations[i].x, torchTranslations[i].y, torchTranslations[i].z));
+            assimpModel = glm::translate(assimpModel, glm::vec3(lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z));
             assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
             assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
             glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel));
             std::string index = to_string(i);
 
-            glUniform3f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].position").c_str()), torchTranslations[i].x, torchTranslations[i].y + 1, torchTranslations[i].z);
+            glUniform3f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].position").c_str()), lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z);
+            if (lightingList[i].isOn)
+            {
+                glUniform4f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].color").c_str()), lightOn.x, lightOn.y, lightOn.z, lightOn.w);
+            }
+            else
+            {
+                glUniform4f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].color").c_str()), lightOff.x, lightOff.y, lightOff.z, lightOff.w);
+
+            }
             glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].constant").c_str()), 0.2f);
             glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].linear").c_str()), 0.7f);
             glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].quadratic").c_str()), 1.8f);
             diamondModel.Draw(modelShader);
         }
-      
+
         // Transform local coordinats to view coordiantes
         shader.Enable();
         model = glm::mat4(1.0f);
         glUniform4f(glGetUniformLocation(shader.ID, "lightColor"), 1.0f, 1.0f, 1.0f, 1.0f);
-        glUniform1f(glGetUniformLocation(shader.ID, "numOfLights"), torchTranslations.size());
+        glUniform1f(glGetUniformLocation(shader.ID, "numOfLights"), lightingList.size());
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
         glUniform3f(glGetUniformLocation(shader.ID, "viewPos"), playerCam.Position.x, playerCam.Position.y, playerCam.Position.z);
 
-        for (size_t i = 0; i < torchTranslations.size(); i++)
+        for (size_t i = 0; i < lightingList.size(); i++)
         {
             std::string index = to_string(i);
 
-            glUniform3f(glGetUniformLocation(shader.ID, ("light[" + index + "].position").c_str()), torchTranslations[i].x, torchTranslations[i].y, torchTranslations[i].z);
-            glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].constant").c_str()), 1.0f);
+            glUniform3f(glGetUniformLocation(shader.ID, ("light[" + index + "].position").c_str()), lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z);
+            if (lightingList[i].isOn)
+            {
+                glUniform4f(glGetUniformLocation(shader.ID, ("light[" + index + "].color").c_str()), lightOn.x, lightOn.y, lightOn.z, lightOn.w);
+            }
+            else
+            {
+                glUniform4f(glGetUniformLocation(shader.ID, ("light[" + index + "].color").c_str()), lightOff.x, lightOff.y, lightOff.z, lightOff.w);
+
+            }            glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].constant").c_str()), 1.0f);
             glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].linear").c_str()), 0.7f);
             glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].quadratic").c_str()), 1.8f);
         }
@@ -464,7 +546,6 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 36); 
         glBindVertexArray(0); 
         glDepthFunc(GL_LESS);
-
 
         // swap buffers & check events
         glfwSwapBuffers(window);
@@ -535,7 +616,6 @@ bool CheckCollision(glm::vec3 object)
         playerCam.Position.y >= object.y - 1.65f &&
         playerCam.Position.z >= object.z - 0.65f )
     {
-        std::cout << "Collision!" << std::endl;
         return true;
     }
 
@@ -573,4 +653,39 @@ unsigned int loadCubemap(std::vector<std::string> faces)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     return textureID;
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        CanPick = true;
+    }
+}
+
+void DoPickAction()
+{
+    float pixels[4];
+    glReadPixels(SCR_WIDTH / 2, SCR_HEIGHT / 2, 1, 1, GL_RGB, GL_FLOAT, &pixels);
+    bool actionDone = false;
+
+    for (size_t i = 0; i < lightingList.size(); i++)
+    {
+        if (lightingList[i].pickingValue.x == pixels[0])
+        {
+            lightingList[i].isOn = !lightingList[i].isOn;
+            if (lightingList[i].isOn)
+            {
+                Jukebox->play2D("resources/audio/ignite.ogg", false);                
+            }
+            else
+            {
+                Jukebox->play2D("resources/audio/extinguish.ogg", false);                
+            }
+            break;
+        }
+    }
+
+
+    CanPick = false;
 }

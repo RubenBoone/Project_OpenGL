@@ -1,8 +1,9 @@
 #version 330 core
-#define MAX_LIGHTS 64
+#define MAX_LIGHTS 512
 
 struct Light {
     vec3 position;
+    vec4 color;
 
     float constant;
     float linear;
@@ -30,17 +31,17 @@ uniform sampler2D texture_diffuse;
 vec4 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
 
-    float ambientStrenght = 1.0;
-    vec4 ambient = ambientStrenght * lightColor;
+    float ambientStrenght = 0.4;
+    vec4 ambient = ambientStrenght * light.color;
 
     vec3 lightDir = normalize(light.position - fragPos);
     vec3 reflectDir = reflect(-lightDir, normal);
         float diff = max(dot(normal, lightDir), 0.0);
-    vec4 diffuse = diff * lightColor;
+    vec4 diffuse = diff * light.color;
 
     float specularStrenght = 0.5;
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
-    vec4 specular = (specularStrenght * spec * lightColor); 
+    vec4 specular = (specularStrenght * spec * light.color); 
 
     float distance    = length(light.position - fragPos);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
