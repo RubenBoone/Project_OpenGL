@@ -27,7 +27,7 @@ uniform Light light[MAX_LIGHTS];
 vec4 CalcPointLight(Light light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
 
-    float ambientStrenght = 0.1;
+    float ambientStrenght = 0.5;
     vec4 ambient = ambientStrenght * light.color;
 
     vec3 lightDir = normalize(light.position - fragPos);

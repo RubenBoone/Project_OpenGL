@@ -415,7 +415,7 @@ int main()
         playerCam.InputHandler(window, deltaTime);
         bool isCollision = CheckCollision(wallTranslations[0]);
 
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
@@ -671,7 +671,6 @@ void DoPickAction()
 
     for (size_t i = 0; i < lightingList.size(); i++)
     {
-        std::cout << lightingList[i].pickingValue.x << " " << pixels[0] << std::endl;
         if (lightingList[i].pickingValue.x == pixels[0])
         {
             lightingList[i].isOn = !lightingList[i].isOn;
@@ -683,6 +682,7 @@ void DoPickAction()
             {
                 Jukebox->play2D("resources/audio/extinguish.ogg", false);                
             }
+            break;
         }
     }
 
