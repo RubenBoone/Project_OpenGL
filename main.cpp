@@ -479,7 +479,7 @@ int main()
             assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
             assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
             glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel));
-            std::string index = to_string(i);
+            std::string index = std::to_string(i);
 
             glUniform3f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].position").c_str()), lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z);
             if (lightingList[i].isOn)
@@ -508,7 +508,7 @@ int main()
 
         for (size_t i = 0; i < lightingList.size(); i++)
         {
-            std::string index = to_string(i);
+            std::string index = std::to_string(i);
 
             glUniform3f(glGetUniformLocation(shader.ID, ("light[" + index + "].position").c_str()), lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z);
             if (lightingList[i].isOn)
@@ -642,7 +642,7 @@ unsigned int loadCubemap(std::vector<std::string> faces)
         }
         else
         {
-            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
             stbi_image_free(data);
         }
     }
