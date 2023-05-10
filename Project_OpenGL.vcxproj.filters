@@ -21,7 +21,7 @@
     </Filter>
     <Filter Include="resources\skybox">
       <UniqueIdentifier>{e3f1ae7a-4d3e-4b50-9d27-8a7bdddb3f36}</UniqueIdentifier>
-     </Filter>
+    </Filter>
     <Filter Include="resources\models">
       <UniqueIdentifier>{484b679b-5452-4651-a44e-3e0759e2dbc7}</UniqueIdentifier>
     </Filter>
@@ -94,16 +94,12 @@
     <None Include="resources\shaders\cubeShader.vs">
       <Filter>resources\shaders</Filter>
     </None>
-    <None Include="skyboxShader.fs">
+    <None Include="resources\shaders\skyboxShader.fs" />
+    <None Include="resources\shaders\skyboxShader.vs" />
+    <None Include="resources\shaders\modelShader.vs">
       <Filter>resources\shaders</Filter>
     </None>
-    <None Include="skyboxShader.vs">
-      <Filter>resources\shaders</Filter>
-     </None>
-    <None Include="modelShader.vs">
-      <Filter>resources\shaders</Filter>
-    </None>
-    <None Include="modelShader.fs">
+    <None Include="resources\shaders\modelShader.fs">
       <Filter>resources\shaders</Filter>
     </None>
   </ItemGroup>
