@@ -60,6 +60,22 @@ struct MazeLocation
     }
 };
 
+struct Light
+{
+    glm::vec3 position;
+    glm::vec3 pickingValue;
+    bool isOn;
+
+    Light(glm::vec3 position, glm::vec3 pickingValue, bool isOn)
+    {
+        this->position = position;
+        this->pickingValue = pickingValue;
+        this->isOn = isOn;
+    }
+};
+
+std::vector<Light> lightingList;
+
 // Cube information
 float vertices[] = {
     // Postion            // Normals           // TextCoord
@@ -241,8 +257,6 @@ int main()
     }
 
     std::vector<glm::vec3> wallTranslations;
-    std::vector<glm::vec3> torchTranslations;
-    std::vector<glm::vec3> torchPickColor;
 
     float c = 0.0f;
     for (size_t i = 0; i < mazeWalls.size(); i++)
@@ -254,13 +268,16 @@ int main()
         }
         else if (mazeWalls[i].isLight)
         {
-            glm::vec3 translation(mazeWalls[i].position.x, mazeWalls[i].position.y, mazeWalls[i].position.z);
-            torchTranslations.push_back(translation);
-            std::cout << c << std::endl;
-            torchPickColor.push_back(glm::vec3(c, 0.0f, 0.0f));
-            c += 0.01f;
+            glm::vec3 position(mazeWalls[i].position.x, mazeWalls[i].position.y, mazeWalls[i].position.z);
+            glm::vec3 picking((1.0f/255)*c, 0.0f, 0.0f);
+            c++;
+
+            lightingList.push_back(Light(position, picking, false));
+
         }
     }
+
+    lightingList[0].isOn = false;
 
     // Create shaders
     Shader shader(FileReader("resources/shaders/cubeShader.vs").getFileContent(),
@@ -382,7 +399,8 @@ int main()
     //Loads diamond for testing, this can be changed later
     Model diamondModel("resources/models/torch/Torch.obj");
     glm::mat4 model = glm::mat4(1.0f);
-
+    glm::vec4 lightOn = glm::vec4(1.0f);
+    glm::vec4 lightOff = glm::vec4(0.0f);
     // Draw loop
     while (!glfwWindowShouldClose(window))
     {
@@ -426,13 +444,13 @@ int main()
         glClearColor(1.0, 1.0, 1.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        for (size_t i = 0; i < torchTranslations.size(); i++)
+        for (size_t i = 0; i < lightingList.size(); i++)
         {
             glm::mat4 pick_model = glm::mat4(1.0f);
-            pick_model = glm::translate(pick_model, glm::vec3(torchTranslations[i].x, torchTranslations[i].y, torchTranslations[i].z));
+            pick_model = glm::translate(pick_model, glm::vec3(lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z));
             pick_model = glm::scale(pick_model, glm::vec3(0.1f, 0.2f, 0.1f));
             glUniformMatrix4fv(glGetUniformLocation(pickShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(pick_model));
-            glUniform4f(glGetUniformLocation(pickShader.ID, "color"), torchPickColor[i].x, torchPickColor[i].y, torchPickColor[i].z, 1.0f);
+            glUniform4f(glGetUniformLocation(pickShader.ID, "color"), lightingList[i].pickingValue.x, lightingList[i].pickingValue.x, lightingList[i].pickingValue.x, 1.0f);
             glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         }
 
@@ -450,44 +468,58 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view)); 
 
         glUniform4f(glGetUniformLocation(modelShader.ID, "lightColor"), 1.0f, 1.0f, 1.0f, 1.0f);
-        glUniform1f(glGetUniformLocation(modelShader.ID, "numOfLights"), torchTranslations.size());
+        glUniform1f(glGetUniformLocation(modelShader.ID, "numOfLights"), lightingList.size());
         glUniform3f(glGetUniformLocation(modelShader.ID, "viewPos"), playerCam.Position.x, playerCam.Position.y, playerCam.Position.z);
 
         glm::mat4 assimpModel = glm::mat4(1.0f);
-        for (size_t i = 0; i < torchTranslations.size(); i++)
+        for (size_t i = 0; i < lightingList.size(); i++)
         {
             assimpModel = glm::mat4(1.0f);
-            assimpModel = glm::translate(assimpModel, glm::vec3(torchTranslations[i].x, torchTranslations[i].y, torchTranslations[i].z));
+            assimpModel = glm::translate(assimpModel, glm::vec3(lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z));
             assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
             assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
             glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel));
             std::string index = to_string(i);
 
-            glUniform3f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].position").c_str()), torchTranslations[i].x, torchTranslations[i].y + 1, torchTranslations[i].z);
+            glUniform3f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].position").c_str()), lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z);
+            if (lightingList[i].isOn)
+            {
+                glUniform4f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].color").c_str()), lightOn.x, lightOn.y, lightOn.z, lightOn.w);
+            }
+            else
+            {
+                glUniform4f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].color").c_str()), lightOff.x, lightOff.y, lightOff.z, lightOff.w);
+
+            }
             glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].constant").c_str()), 0.2f);
             glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].linear").c_str()), 0.7f);
             glUniform1f(glGetUniformLocation(modelShader.ID, ("light[" + index + "].quadratic").c_str()), 1.8f);
             diamondModel.Draw(modelShader);
         }
 
-
-
-
         // Transform local coordinats to view coordiantes
         shader.Enable();
         model = glm::mat4(1.0f);
         glUniform4f(glGetUniformLocation(shader.ID, "lightColor"), 1.0f, 1.0f, 1.0f, 1.0f);
-        glUniform1f(glGetUniformLocation(shader.ID, "numOfLights"), torchTranslations.size());
+        glUniform1f(glGetUniformLocation(shader.ID, "numOfLights"), lightingList.size());
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
         glUniform3f(glGetUniformLocation(shader.ID, "viewPos"), playerCam.Position.x, playerCam.Position.y, playerCam.Position.z);
 
-        for (size_t i = 0; i < torchTranslations.size(); i++)
+        for (size_t i = 0; i < lightingList.size(); i++)
         {
             std::string index = to_string(i);
 
-            glUniform3f(glGetUniformLocation(shader.ID, ("light[" + index + "].position").c_str()), torchTranslations[i].x, torchTranslations[i].y, torchTranslations[i].z);
-            glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].constant").c_str()), 1.0f);
+            glUniform3f(glGetUniformLocation(shader.ID, ("light[" + index + "].position").c_str()), lightingList[i].position.x, lightingList[i].position.y, lightingList[i].position.z);
+            if (lightingList[i].isOn)
+            {
+                glUniform4f(glGetUniformLocation(shader.ID, ("light[" + index + "].color").c_str()), lightOn.x, lightOn.y, lightOn.z, lightOn.w);
+            }
+            else
+            {
+                glUniform4f(glGetUniformLocation(shader.ID, ("light[" + index + "].color").c_str()), lightOff.x, lightOff.y, lightOff.z, lightOff.w);
+
+            }            glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].constant").c_str()), 1.0f);
             glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].linear").c_str()), 0.7f);
             glUniform1f(glGetUniformLocation(shader.ID, ("light[" + index + "].quadratic").c_str()), 1.8f);
         }
@@ -635,7 +667,17 @@ void DoPickAction()
 {
     float pixels[4];
     glReadPixels(SCR_WIDTH / 2, SCR_HEIGHT / 2, 1, 1, GL_RGB, GL_FLOAT, &pixels);
-    printf("%f %f %f %f\n", pixels[0], pixels[1], pixels[2], pixels[3]);
+
+    for (size_t i = 0; i < lightingList.size(); i++)
+    {
+        std::cout << lightingList[i].pickingValue.x << " " << pixels[0] << std::endl;
+        if (lightingList[i].pickingValue.x == pixels[0])
+        {
+            lightingList[i].isOn = !lightingList[i].isOn;
+            std::cout << "turned on torch" << std::endl;
+        }
+    }
+
 
     CanPick = false;
 }
