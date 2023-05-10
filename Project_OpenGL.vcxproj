@@ -170,10 +170,10 @@
     <ClInclude Include="VBO.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="modelShader.fs" />
-    <None Include="modelShader.vs" />
     <None Include="resources\shaders\cubeShader.fs" />
     <None Include="resources\shaders\cubeShader.vs" />
+    <None Include="resources\shaders\modelShader.fs" />
+    <None Include="resources\shaders\modelShader.vs" />
     <None Include="resources\shaders\skyboxShader.fs" />
     <None Include="resources\shaders\skyboxShader.vs" />
   </ItemGroup>

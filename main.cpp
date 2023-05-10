@@ -241,7 +241,8 @@ int main()
     Shader skyboxShader(FileReader("resources/shaders/skyboxShader.vs").getFileContent(),
         FileReader("resources/shaders/skyboxShader.fs").getFileContent());
   
-    Shader modelShader("resources/shaders/modelShader.vs", "resources/shaders/modelShader.fs");
+    Shader modelShader(FileReader("resources/shaders/modelShader.vs").getFileContent(),
+        FileReader("resources/shaders/modelShader.fs").getFileContent());
 
     // Create VAO, VBO & EBO's
     VAO floorVAO = VAO();
@@ -336,7 +337,7 @@ int main()
   
   
     //Loads diamond for testing, this can be changed later
-    Model diamondModel("resources/models/diamond/source/Diamond.blend");
+    Model diamondModel("resources/models/torch/Torch.obj");
   
     glm::vec3 lightPos(-1.5f, 0.5f, -0.5f);
   
@@ -375,6 +376,24 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        //Draw 3d model
+        modelShader.Enable(); 
+
+        glm::mat4 view = playerCam.getView(); 
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection())); 
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view)); 
+
+        glm::mat4 assimpModel = glm::mat4(1.0f);
+        assimpModel = glm::translate(assimpModel, glm::vec3(0.0f, 0.0f, 0.0f));
+        assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
+        assimpModel = glm::rotate(assimpModel, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            //Model = glm::rotate(Model, angle_in_radians, glm::vec3(x, y, z)); // where x, y, z is axis of rotation (e.g. 0 1 0)
+
+        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel)); 
+        diamondModel.Draw(modelShader); 
+        //--
+
+
         glm::mat4 model = glm::mat4(1.0f);
 
         lightShader.Enable();
@@ -383,22 +402,10 @@ int main()
         model = glm::scale(model, glm::vec3(0.2));
         glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(glGetUniformLocation(lightShader.ID, "cameraMatrix"), 1, GL_FALSE, glm::value_ptr(playerCam.getCamMatrix()));
-
+        
         glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
-        //Draw 3d model
-        modelShader.Enable();
-
-        glm::mat4 view = playerCam.getView();
-        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection()));
-        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
-
-        glm::mat4 assimpModel;
-        assimpModel = glm::translate(assimpModel, glm::vec3(0.0f, -1.75f, 0.0f));
-        assimpModel = glm::scale(assimpModel, glm::vec3(0.2f, 0.2f, 0.2f));
-        
-        glUniformMatrix4fv(glGetUniformLocation(modelShader.ID, "model"), 1, GL_FALSE, glm::value_ptr(assimpModel));
-        diamondModel.Draw(modelShader);
+      
       
         // Transform local coordinats to view coordiantes
         shader.Enable();
@@ -424,8 +431,8 @@ int main()
         //draw skybox
         glDepthFunc(GL_LEQUAL); 
         skyboxShader.Enable();
-        glm::mat4 view = glm::mat4(glm::mat3(playerCam.getView()));
-        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
+        glm::mat4 skyboxView = glm::mat4(glm::mat3(playerCam.getView()));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "view"), 1, GL_FALSE, glm::value_ptr(skyboxView));
         glUniformMatrix4fv(glGetUniformLocation(skyboxShader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(playerCam.getProjection()));
 
         glBindVertexArray(skyboxVAO); 
