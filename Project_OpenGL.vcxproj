@@ -79,8 +79,8 @@
     <LibraryPath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\lib;C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\include;C:\Users\Gebruiker\Desktop\CG\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\lib;C:\Users\Gebruiker\Desktop\CG\Project_OpenGL\Libraries\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Dev\c++\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Dev\c++\Project_OpenGL\Libraries\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\include;C:\Users\ruben\Documents\Schakeljaar_2022-2023\Computer Graphics\Project_OpenGL\Libraries\include;$(IncludePath)</IncludePath>
